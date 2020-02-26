@@ -8,7 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Client {
-    private static final Logger LOGGER = LogManager.getLogger(Client.class);
+    private static final Logger log = LogManager.getLogger(Client.class);
 
     private static SocketChannel client;
     private static ByteBuffer buffer;
@@ -26,7 +26,7 @@ public class Client {
         buffer.clear();
         client.read(buffer);
         response = new String(buffer.array()).trim();
-        LOGGER.info("Server responded with: " + response);
+        log.info("Server responded with: " + response);
         buffer.clear();
     }
 }
