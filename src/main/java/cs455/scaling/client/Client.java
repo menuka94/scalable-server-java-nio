@@ -7,6 +7,7 @@ import java.nio.channels.SocketChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
+import cs455.scaling.util.Constants;
 import cs455.scaling.util.HashUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,7 +28,7 @@ public class Client {
     private static final Logger log = LogManager.getLogger(Client.class);
 
     private static SocketChannel socketChannel;
-    private static ByteBuffer buffer;
+    // private static ByteBuffer buffer;
 
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException,
             InterruptedException {
@@ -56,23 +57,15 @@ public class Client {
         // Connect to the server
         socketChannel = SocketChannel.open(new InetSocketAddress(serverHost, serverPort));
 
-
         // Create buffer
-        buffer = ByteBuffer.allocate(256);
+        // buffer = ByteBuffer.allocate(256);
 
-        buffer = ByteBuffer.wrap("Please send this back to me.".getBytes());
-        String response = null;
-        socketChannel.write(buffer);
-        buffer.clear();
-        socketChannel.read(buffer);
-        response = new String(buffer.array()).trim();
-        log.info("Server responded with: " + response);
-        buffer.clear();
+        // buffer = ByteBuffer.wrap("Please send this back to me.".getBytes());
 
         Random random = new Random();
         while (true) {
             // an 8KB message
-            byte[] message = new byte[8192];
+            byte[] message = new byte[Constants.MESSAGE_SIZE];
             random.nextBytes(message);
 
             // prepare to message to send
@@ -80,6 +73,14 @@ public class Client {
 
             String hashedMessage = HashUtil.SHA1FromBytes(message);
             hashes.put(hashedMessage);
+
+            String response = null;
+            socketChannel.write(buffer);
+            buffer.clear();
+            socketChannel.read(buffer);
+            response = new String(buffer.array()).trim();
+            log.info("Server responded with: " + response);
+            buffer.clear();
         }
     }
 }

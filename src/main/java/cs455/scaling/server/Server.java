@@ -50,6 +50,7 @@ public class Server {
         }
 
         threadPool = new ThreadPool(threadPoolSize);
+        threadPool.startThreads();
 
         // Open the selector
         Selector selector = Selector.open();
