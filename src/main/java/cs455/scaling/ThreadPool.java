@@ -2,8 +2,10 @@ package cs455.scaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.concurrent.LinkedBlockingQueue;
 import cs455.scaling.task.Task;
+import cs455.scaling.util.Batch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,15 +21,13 @@ import org.apache.logging.log4j.Logger;
  */
 public class ThreadPool {
     private static final Logger log = LogManager.getLogger(ThreadPool.class);
-    private LinkedBlockingQueue<Task> taskQueue;
+    private LinkedBlockingQueue<Batch> batchQueue;
     private ArrayList<Worker> workers;
     private int threadPoolSize;
-    private int batchTime;
 
-    public ThreadPool(int threadPoolSize, int batchTime) {
+    public ThreadPool(int threadPoolSize) {
         this.threadPoolSize = threadPoolSize;
-        this.batchTime = batchTime;
-        taskQueue = new LinkedBlockingQueue<>();
+        batchQueue = new LinkedBlockingQueue<>();
         workers = new ArrayList<>();
         for (int i = 0; i < threadPoolSize; i++) {
             workers.add(new Worker());
@@ -45,11 +45,14 @@ public class ThreadPool {
 
         @Override
         public void run() {
-            while(true) {
-                Task task = null;
+            while (true) {
+                Batch batch = null;
                 try {
-                    task = taskQueue.take();
-                    task.execute();
+                    batch = batchQueue.take();
+                    LinkedList<Task> tasks = batch.getTasks();
+                    for (Task task : tasks) {
+                        task.execute();
+                    }
                 } catch (InterruptedException | IOException e) {
                     log.error(e.getStackTrace());
                 }
@@ -57,8 +60,8 @@ public class ThreadPool {
         }
     }
 
-    public void addTask(Task task) throws InterruptedException {
-        taskQueue.put(task);
+    public void addBatch(Batch batch) throws InterruptedException {
+        batchQueue.put(batch);
     }
 
     public int getThreadPoolSize() {

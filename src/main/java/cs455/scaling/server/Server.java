@@ -1,7 +1,6 @@
 package cs455.scaling.server;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -11,6 +10,7 @@ import java.util.Set;
 import cs455.scaling.ThreadPool;
 import cs455.scaling.task.ReadAndRespond;
 import cs455.scaling.task.Register;
+import cs455.scaling.util.Batch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 public class Server {
     private static final Logger log = LogManager.getLogger(Server.class);
     private static ThreadPool threadPool;
+    private static Batch batch;
 
     public static void main(String[] args) throws IOException {
         if (args.length != 4) {
@@ -50,8 +51,10 @@ public class Server {
             System.exit(1);
         }
 
-        threadPool = new ThreadPool(threadPoolSize, batchSize);
+        threadPool = new ThreadPool(threadPoolSize);
         threadPool.startThreads();
+
+        batch = new Batch(batchSize);
 
         // Open the selector
         Selector selector = Selector.open();
@@ -101,19 +104,11 @@ public class Server {
 
     private static void register(Selector selector, ServerSocketChannel serverSocketChannel) {
         Register register = new Register(selector, serverSocketChannel);
-        try {
-            threadPool.addTask(register);
-        } catch (InterruptedException e) {
-            log.error(e.getStackTrace());
-        }
+        batch.addBatchTask(register);
     }
 
-    private static void readAndRespond(SelectionKey key)  {
+    private static void readAndRespond(SelectionKey key) {
         ReadAndRespond readAndRespond = new ReadAndRespond(key);
-        try {
-            threadPool.addTask(readAndRespond);
-        } catch (InterruptedException e) {
-            log.error(e.getStackTrace());
-        }
+        batch.addBatchTask(readAndRespond);
     }
 }
