@@ -1,5 +1,6 @@
 package cs455.scaling;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import cs455.scaling.task.Task;
@@ -20,13 +21,15 @@ public class ThreadPool {
     private static final Logger log = LogManager.getLogger(ThreadPool.class);
     private LinkedBlockingQueue<Task> taskQueue;
     private ArrayList<Worker> workers;
-    private int size;
+    private int threadPoolSize;
+    private int batchTime;
 
-    public ThreadPool(int size) {
-        this.size = size;
+    public ThreadPool(int threadPoolSize, int batchTime) {
+        this.threadPoolSize = threadPoolSize;
+        this.batchTime = batchTime;
         taskQueue = new LinkedBlockingQueue<>();
         workers = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < threadPoolSize; i++) {
             workers.add(new Worker());
         }
     }
@@ -37,13 +40,19 @@ public class ThreadPool {
         }
     }
 
-    private static class Worker extends Thread {
-        private static final Logger log = LogManager.getLogger(Worker.class);
+    private class Worker extends Thread {
+        private final Logger log = LogManager.getLogger(Worker.class);
 
         @Override
         public void run() {
             while(true) {
-
+                Task task = null;
+                try {
+                    task = taskQueue.take();
+                    task.execute();
+                } catch (InterruptedException | IOException e) {
+                    log.error(e.getStackTrace());
+                }
             }
         }
     }
@@ -52,7 +61,7 @@ public class ThreadPool {
         taskQueue.put(task);
     }
 
-    public int getSize() {
-        return size;
+    public int getThreadPoolSize() {
+        return threadPoolSize;
     }
 }

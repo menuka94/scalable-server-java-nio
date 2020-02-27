@@ -69,17 +69,17 @@ public class Client {
         log.info("Server responded with: " + response);
         buffer.clear();
 
-        Random random = new Random();
-        while (true) {
-            // an 8KB message
-            byte[] message = new byte[8192];
-            random.nextBytes(message);
-
-            // prepare to message to send
-            ByteBuffer buffer = ByteBuffer.wrap(message);
-
-            String hashedMessage = HashUtil.SHA1FromBytes(message);
-            hashes.put(hashedMessage);
-        }
+//        Random random = new Random();
+//        while (true) {
+//            // an 8KB message
+//            byte[] message = new byte[8192];
+//            random.nextBytes(message);
+//
+//            // prepare to message to send
+//            ByteBuffer buffer = ByteBuffer.wrap(message);
+//
+//            String hashedMessage = HashUtil.SHA1FromBytes(message);
+//            hashes.put(hashedMessage);
+//        }
     }
 }

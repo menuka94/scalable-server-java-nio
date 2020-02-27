@@ -1,6 +1,7 @@
 package cs455.scaling.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -49,14 +50,16 @@ public class Server {
             System.exit(1);
         }
 
-        threadPool = new ThreadPool(threadPoolSize);
+        threadPool = new ThreadPool(threadPoolSize, batchSize);
+        threadPool.startThreads();
 
         // Open the selector
         Selector selector = Selector.open();
 
         // Create input channel
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(new InetSocketAddress("localhost", portNum));
+        serverSocketChannel.bind(new InetSocketAddress("localhost",
+                portNum));
 
         // Register channel to the selector
         serverSocketChannel.configureBlocking(false);
@@ -105,7 +108,12 @@ public class Server {
         }
     }
 
-    private static void readAndRespond(SelectionKey key) throws IOException {
+    private static void readAndRespond(SelectionKey key)  {
         ReadAndRespond readAndRespond = new ReadAndRespond(key);
+        try {
+            threadPool.addTask(readAndRespond);
+        } catch (InterruptedException e) {
+            log.error(e.getStackTrace());
+        }
     }
 }
