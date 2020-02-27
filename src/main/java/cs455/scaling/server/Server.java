@@ -28,7 +28,7 @@ public class Server {
     private static ThreadPool threadPool;
     private static Batch batch;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         if (args.length != 4) {
             log.warn("Invalid number of arguments. Provide <port-num> <thread-pool-size> " +
                     "<batch-size> <batch-time>");
@@ -54,15 +54,14 @@ public class Server {
         threadPool = new ThreadPool(threadPoolSize);
         threadPool.startThreads();
 
-        batch = new Batch(batchSize);
+        batch = new Batch(batchSize, threadPool);
 
         // Open the selector
         Selector selector = Selector.open();
 
         // Create input channel
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(new InetSocketAddress("localhost",
-                portNum));
+        serverSocketChannel.bind(new InetSocketAddress("localhost", portNum));
 
         // Register channel to the selector
         serverSocketChannel.configureBlocking(false);
@@ -102,12 +101,12 @@ public class Server {
         }
     }
 
-    private static void register(Selector selector, ServerSocketChannel serverSocketChannel) {
+    private static void register(Selector selector, ServerSocketChannel serverSocketChannel) throws InterruptedException {
         Register register = new Register(selector, serverSocketChannel);
         batch.addBatchTask(register);
     }
 
-    private static void readAndRespond(SelectionKey key) {
+    private static void readAndRespond(SelectionKey key) throws InterruptedException {
         ReadAndRespond readAndRespond = new ReadAndRespond(key);
         batch.addBatchTask(readAndRespond);
     }

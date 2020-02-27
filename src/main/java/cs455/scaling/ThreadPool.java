@@ -49,7 +49,7 @@ public class ThreadPool {
                 Batch batch = null;
                 try {
                     batch = batchQueue.take();
-                    LinkedList<Task> tasks = batch.getTasks();
+                    ArrayList<Task> tasks = batch.getTasks();
                     for (Task task : tasks) {
                         task.execute();
                     }

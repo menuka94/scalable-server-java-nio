@@ -31,7 +31,7 @@ public class ReadAndRespond implements Task {
             client.close();
             log.info("\t\tClient disconnected.");
         } else {
-            // Return their message to them
+            // Return the hash of message back to the client
             log.info("\t\tReceived: " + new String(buffer.array()));
 
             // Flip the buffer now write
