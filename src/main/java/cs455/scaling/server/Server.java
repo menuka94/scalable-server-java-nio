@@ -9,17 +9,31 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
+import cs455.scaling.ThreadPool;
+import cs455.scaling.task.ReadAndRespond;
+import cs455.scaling.task.Register;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * There is exactly one server node in the system.
+ * The server node provides the following functions:
+ * A. Accepts incoming network connections from the clients.
+ * B. Accepts incoming traffic from these connections
+ * C. Groups data from the clients together into batches
+ * D. Replies to clients by sending back a hash code for each message received.
+ * E. The server performs functions A, B, C, and D by relying on the thread pool.
+ */
 public class Server {
     private static final Logger log = LogManager.getLogger(Server.class);
+    private static ThreadPool threadPool;
 
     public static void main(String[] args) throws IOException {
         // java cs455.scaling.server.Server portnum thread-pool-size batch-size batch-time
         if (args.length != 4) {
             log.warn("Invalid number of arguments. Provide <port-num> <thread-pool-size> " +
                     "<batch-size> <batch-time>");
+            System.exit(1);
         }
 
         int portNum = 0;
@@ -34,7 +48,11 @@ public class Server {
             batchTime = Integer.parseInt(args[3]);
         } catch (NumberFormatException e) {
             log.error(e.getStackTrace());
+            log.info("Invalid arguments. Exiting ...");
+            System.exit(1);
         }
+
+        threadPool = new ThreadPool(threadPoolSize);
 
         // Open the selector
         Selector selector = Selector.open();
@@ -83,38 +101,15 @@ public class Server {
 
     private static void register(Selector selector, ServerSocketChannel serverSocketChannel)
             throws IOException {
-        // Grab the incoming socket from the serverSocketChannel
-        SocketChannel client = serverSocketChannel.accept();
-        // Configure it to be a new channel and key that our selector should monitor
-        client.configureBlocking(false);
-        client.register(selector, SelectionKey.OP_READ);
-        log.info("\t\tNew Client Registered");
+        Register register = new Register(selector, serverSocketChannel);
+        try {
+            threadPool.addTask(register);
+        } catch (InterruptedException e) {
+            log.error(e.getStackTrace());
+        }
     }
 
     private static void readAndRespond(SelectionKey key) throws IOException {
-        // Create a buffer to read into
-        ByteBuffer buffer = ByteBuffer.allocate(256);
-
-        // Grab the socket from the key
-        SocketChannel client = (SocketChannel) key.channel();
-
-        // Read from it
-        int bytesRead = client.read(buffer);
-
-        // Handle a closed connection
-        if (bytesRead == -1) {
-            client.close();
-            log.info("\t\tClient disconnected.");
-        } else {
-            // Return their message to them
-            log.info("\t\tReceived: " + new String(buffer.array()));
-
-            // Flip the buffer now write
-            buffer.flip();
-            client.write(buffer);
-
-            // Clear the buffer
-            buffer.clear();
-        }
+        ReadAndRespond readAndRespond = new ReadAndRespond(key);
     }
 }

@@ -4,27 +4,63 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.LinkedList;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Unlike the server node, there are multiple Clients (minimum of 100) in the system.
+ * A client provides the following functionalities:
+ * (1) Connect and maintain an active connection to the server.
+ * (2) Regularly send data packets to the server. The payloads for these data packets are 8 KB and
+ * the values for these bytes are randomly generated. The rate at which each connection will
+ * generate packets is R per-second; include a Thread.sleep(1000/R) in the client which ensures
+ * that you achieve the targeted production rate. The typical value of R is between 2-4.
+ * (3) The client should track hashcodes of the data packets that it has sent to the server.
+ * A server will acknowledge every packet that it has received by sending the computed hash code
+ * back to the client.
+ */
 public class Client {
     private static final Logger log = LogManager.getLogger(Client.class);
 
-    private static SocketChannel client;
+    private static SocketChannel socketChannel;
     private static ByteBuffer buffer;
 
     public static void main(String[] args) throws IOException {
+        LinkedBlockingQueue<String> hashes = new LinkedBlockingQueue<>();
+        // java cs455.scaling.client.Client server-host server-port message-rate
+        if (args.length != 3) {
+            log.warn("Invalid number of arguments. Provide <server-host> <server-port> " +
+                    "<message-rate>");
+            System.exit(1);
+        }
+
+        String serverHost = args[0];
+        int serverPort = 0;
+        int messageRate = 0;
+        try {
+            serverPort = Integer.parseInt(args[1]);
+            messageRate = Integer.parseInt(args[2]);
+        } catch (NumberFormatException e) {
+            log.error(e.getStackTrace());
+            log.info("Invalid arguments. Exiting ...");
+            System.exit(1);
+        }
+
+        long sleepTime = 1000 / messageRate;
+
         // Connect to the server
-        client = SocketChannel.open(new InetSocketAddress("localhost", 5600));
+        socketChannel = SocketChannel.open(new InetSocketAddress("localhost", 5600));
 
         // Create buffer
         buffer = ByteBuffer.allocate(256);
 
         buffer = ByteBuffer.wrap("Please send this back to me.".getBytes());
         String response = null;
-        client.write(buffer);
+        socketChannel.write(buffer);
         buffer.clear();
-        client.read(buffer);
+        socketChannel.read(buffer);
         response = new String(buffer.array()).trim();
         log.info("Server responded with: " + response);
         buffer.clear();

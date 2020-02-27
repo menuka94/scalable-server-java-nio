@@ -12,9 +12,7 @@ import java.util.TimerTask;
 public class PrintInterval {
     public static void main(String[] args) {
         Timer timer = new Timer();
-
         PrintTask printTask = new PrintTask();
-
         timer.scheduleAtFixedRate(printTask, 0L, 5000L);
     }
 
