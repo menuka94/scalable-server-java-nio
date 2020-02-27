@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.LinkedList;
+import java.security.NoSuchAlgorithmException;
+import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
+import cs455.scaling.util.HashUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,9 +29,10 @@ public class Client {
     private static SocketChannel socketChannel;
     private static ByteBuffer buffer;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException,
+            InterruptedException {
         LinkedBlockingQueue<String> hashes = new LinkedBlockingQueue<>();
-        // java cs455.scaling.client.Client server-host server-port message-rate
+
         if (args.length != 3) {
             log.warn("Invalid number of arguments. Provide <server-host> <server-port> " +
                     "<message-rate>");
@@ -51,7 +54,8 @@ public class Client {
         long sleepTime = 1000 / messageRate;
 
         // Connect to the server
-        socketChannel = SocketChannel.open(new InetSocketAddress("localhost", 5600));
+        socketChannel = SocketChannel.open(new InetSocketAddress(serverHost, serverPort));
+
 
         // Create buffer
         buffer = ByteBuffer.allocate(256);
@@ -64,5 +68,18 @@ public class Client {
         response = new String(buffer.array()).trim();
         log.info("Server responded with: " + response);
         buffer.clear();
+
+        Random random = new Random();
+        while (true) {
+            // an 8KB message
+            byte[] message = new byte[8192];
+            random.nextBytes(message);
+
+            // prepare to message to send
+            ByteBuffer buffer = ByteBuffer.wrap(message);
+
+            String hashedMessage = HashUtil.SHA1FromBytes(message);
+            hashes.put(hashedMessage);
+        }
     }
 }

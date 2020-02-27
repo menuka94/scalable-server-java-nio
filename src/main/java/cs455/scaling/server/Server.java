@@ -2,11 +2,9 @@ package cs455.scaling.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
 import cs455.scaling.ThreadPool;
@@ -29,7 +27,6 @@ public class Server {
     private static ThreadPool threadPool;
 
     public static void main(String[] args) throws IOException {
-        // java cs455.scaling.server.Server portnum thread-pool-size batch-size batch-time
         if (args.length != 4) {
             log.warn("Invalid number of arguments. Provide <port-num> <thread-pool-size> " +
                     "<batch-size> <batch-time>");
@@ -99,8 +96,7 @@ public class Server {
         }
     }
 
-    private static void register(Selector selector, ServerSocketChannel serverSocketChannel)
-            throws IOException {
+    private static void register(Selector selector, ServerSocketChannel serverSocketChannel) {
         Register register = new Register(selector, serverSocketChannel);
         try {
             threadPool.addTask(register);
