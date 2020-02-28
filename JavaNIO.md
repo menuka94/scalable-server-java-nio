@@ -1,13 +1,13 @@
 # Java NIO
 
 ### 3 Main Constructs
-    * Channels - communication channels, associated with an underlying socket connection
-    * Selectors - Object through which a single thread can monitor and service multiple channels
-    * SelectionKeys - Each channel registered with the selector has an associated key
-        * Interest Set
-            * What kind of activity the selector will monitor for
-        * Ready Set
-            * What operations the channel associated with the key is ready for
+* Channels - communication channels, associated with an underlying socket connection
+* Selectors - Object through which a single thread can monitor and service multiple channels
+* SelectionKeys - Each channel registered with the selector has an associated key
+   * Interest Set
+      * What kind of activity the selector will monitor for
+   * Ready Set
+      * What operations the channel associated with the key is ready for
             
             
             
@@ -31,23 +31,23 @@ channel from any random thread
      
      
 #### When would you want to register write interest
-* When channel.write() returns 0, this means 0 bytes were written and the channel is not
+* When `channel.write()` returns 0, this means 0 bytes were written and the channel is not
      currently writable
      * Could be full
 * Rather than spinning in the while loop, you can register write interest with the selector
-, then when the channel does become writable the selector.select() call will pick it up
+, then when the channel does become writable the `selector.select()` call will pick it up
 * Rare situation
 * Remember to turn off write interest when done so the selector does not continuosly loop
 ```java
 ByteBuffer buffer = ByteBuffer.wrap(byteArray);
-    while (true) {
-        socketChannel.write(buffer);       
-    }    
+while (true) {
+   socketChannel.write(buffer);       
+}    
 ```
 
 ### Read and Write Interest
 
-* selector.select() blocks, selector.selectNow() does not block
+* `selector.select()` blocks, `selector.selectNow()` does not block
 * Clients registered for read interest
 * Channels will typically always be writable
 * Registering write interest will mean there is almost always activity on that channel
