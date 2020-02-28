@@ -10,6 +10,7 @@ public class HashUtil {
         byte[] hash = digest.digest(data);
         BigInteger hashInt = new BigInteger(1, hash);
 
+        // TODO: Pad with 0's in case length < 40 characters
         return hashInt.toString(16);
     }
 }

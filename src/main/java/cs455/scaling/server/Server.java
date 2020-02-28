@@ -71,14 +71,17 @@ public class Server {
         while (true) {
             log.info("Listening for new connections or messages");
 
-            // Block here
+            // block until one or more channels have activity
             selector.select();
+
             log.info("\tActivity on selector!");
 
-            // Keys are ready
+            // get keys that have activity
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
 
+            // loop over keys
             Iterator<SelectionKey> iterator = selectedKeys.iterator();
+
             while (iterator.hasNext()) {
                 SelectionKey key = iterator.next();
                 if (!key.isValid()) {
@@ -92,6 +95,8 @@ public class Server {
 
                 // Previous connection has data to read
                 if (key.isReadable()) {
+                    // TODO: add to a pool and deregister the read interest
+                    // that way, the loop will not be spinning over and over again
                     readAndRespond(key);
                 }
 
@@ -101,7 +106,8 @@ public class Server {
         }
     }
 
-    private static void register(Selector selector, ServerSocketChannel serverSocketChannel) throws InterruptedException {
+    private static void register(Selector selector, ServerSocketChannel serverSocketChannel)
+            throws InterruptedException {
         Register register = new Register(selector, serverSocketChannel);
         batch.addBatchTask(register);
     }
