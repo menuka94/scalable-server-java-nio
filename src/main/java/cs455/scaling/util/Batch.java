@@ -56,7 +56,7 @@ public class Batch {
                     clientDataList.add(newClient);
                 }
             } catch (InterruptedException e) {
-
+                e.printStackTrace();
             } finally {
                 addingSemaphore.release(1000);
             }

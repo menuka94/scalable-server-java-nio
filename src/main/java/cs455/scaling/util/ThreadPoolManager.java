@@ -28,6 +28,13 @@ public class ThreadPoolManager extends Thread {
         this.batchTime = batchTime;
     }
 
+    public void startWorkers(int numWorkers) {
+        for (int i = 0; i < numWorkers; i++) {
+            Worker worker = new Worker();
+            worker.start();
+        }
+    }
+
     public static LinkedBlockingQueue<Task> getTaskQueue() {
         return taskQueue;
     }
@@ -38,6 +45,31 @@ public class ThreadPoolManager extends Thread {
 
     public static Batch getCurrentBatch () {
         return currentBatch;
+    }
+
+    public static class Worker extends Thread {
+        private static int instances = 0;
+        private Task task;
+
+        public Worker() {
+            task = null;
+            instances++;
+        }
+
+        //allocate work according to thread pool in an infinite loop
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    task = ThreadPoolManager.addToPool(this);
+                    if (task != null)  {
+                        task.execute();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     /*

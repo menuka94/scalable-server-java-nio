@@ -15,7 +15,6 @@ import cs455.scaling.task.ReceiveIncomingMessages;
 import cs455.scaling.task.Register;
 import cs455.scaling.task.Task;
 import cs455.scaling.util.ThreadPoolManager;
-import cs455.scaling.util.Worker;
 
 public class Server {
 
@@ -41,10 +40,7 @@ public class Server {
         threadPoolManager.start();
 
         //spawn as many workers as the args call for
-        for (int i = 0; i < numWorkers; i++) {
-            Worker worker = new Worker();
-            worker.start();
-        }
+        threadPoolManager.startWorkers(numWorkers);
 
         try {
             //open selector
