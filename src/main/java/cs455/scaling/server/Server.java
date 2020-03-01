@@ -92,10 +92,13 @@ public class Server {
                 if (key.isAcceptable()) {
                     register(selector, serverSocketChannel);
                     // Remove from selectedKeys so we can move to next
-                    selector.selectedKeys().remove(key);
+                    // selector.selectedKeys().remove(key);
 
                     // Re-register with selector so we can receive more connections
-                    serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+                    // serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+                    if (key.attachment() != null) {
+                        key.attach(null);
+                    }
                 }
 
                 // Previous connection has data to read
@@ -106,6 +109,7 @@ public class Server {
                     // iterator.remove();
                 }
             }
+            iterator.remove();
         }
     }
 

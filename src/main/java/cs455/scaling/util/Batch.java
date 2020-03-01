@@ -9,7 +9,7 @@ import org.apache.logging.log4j.Logger;
 public class Batch {
     private static final Logger log = LogManager.getLogger(Batch.class);
 
-    private Vector<Task> tasks;
+    private volatile Vector<Task> tasks;
     private ThreadPool threadPool;
     private int batchSize;
 
@@ -24,11 +24,13 @@ public class Batch {
     }
 
     public synchronized void addBatchTask(Task task) throws InterruptedException {
+        log.info("BatchSize: " + batchSize);
         if (tasks.size() == batchSize) {
             log.info("Adding a new batch of tasks to the ThreadPool");
-            threadPool.addBatch(this);
             // reinitialize tasks list
             tasks = new Vector<>();
+
+            threadPool.addBatch(this);
         }
         tasks.add(task);
     }

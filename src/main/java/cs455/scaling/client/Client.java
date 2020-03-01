@@ -40,11 +40,14 @@ public class Client {
         }
 
         String serverHost = args[0];
+        log.info("ServerHost: " + serverHost);
         int serverPort = 0;
         int messageRate = 0;
         try {
             serverPort = Integer.parseInt(args[1]);
+            log.info("ServerPort: " + serverPort);
             messageRate = Integer.parseInt(args[2]);
+            log.info("messageRate: " + messageRate);
         } catch (NumberFormatException e) {
             log.error(e.getStackTrace());
             log.info("Invalid arguments. Exiting ...");
