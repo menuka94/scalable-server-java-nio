@@ -11,12 +11,9 @@ import cs455.scaling.task.ReadAndRespond;
 import cs455.scaling.task.Task;
 
 public class ThreadPoolManager extends Thread {
-    //initialize this as a final variable here so only one taskQueue is ever created on
-    //a server
-//    public static final TaskQueue taskQueue = new TaskQueue();
     private static final LinkedBlockingQueue<Task> taskQueue = new LinkedBlockingQueue<>();
     private static Batch currentBatch;
-    public static HashMap<SocketChannel, Long> cMessagesSent = new HashMap<>();
+    public static HashMap<SocketChannel, Long> clientMessagesSent = new HashMap<>();
     //should never have more than 1000 threads running at once
     //sem is needed to control problem of having any number able to add
     //but needing to block all of them if creating a new batch
@@ -60,7 +57,6 @@ public class ThreadPoolManager extends Thread {
                     if (!taskQueue.isEmpty()) {
                         //grab a task out of the front of the queue and resolve it in the thread that is calling this method
                         return taskQueue.remove();
-
                     }
                     return null;
                 }
@@ -95,12 +91,9 @@ public class ThreadPoolManager extends Thread {
                     //aquire all permits so you wait for all adding to
                     //finish then prevent adding until you release them
                     batchSem.acquire(1000);
-                    //create new batch
                     batchStart = System.currentTimeMillis();
-                    //create a batch process task
                     sendTask = new ReadAndRespond(currentBatch);
                     currentBatch = new Batch();
-                    //add to task queue
                     taskQueue.add(sendTask);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -113,14 +106,14 @@ public class ThreadPoolManager extends Thread {
             if (time - statTime > 20000) {
                 ArrayList<Long> sentCounts = new ArrayList<>();
                 System.out.println("Stat time");
-                for (SocketChannel client : cMessagesSent.keySet()) {
-                    synchronized (cMessagesSent) {
-                        Long sent = cMessagesSent.get(client);
+                for (SocketChannel client : clientMessagesSent.keySet()) {
+                    synchronized (clientMessagesSent) {
+                        Long sent = clientMessagesSent.get(client);
                         sentCounts.add(sent);
                     }
                 }
-                synchronized (cMessagesSent) {
-                    cMessagesSent = new HashMap<>();
+                synchronized (clientMessagesSent) {
+                    clientMessagesSent = new HashMap<>();
                 }
 
                 double throughput = 0;

@@ -1,6 +1,7 @@
 package cs455.scaling.task;
 
-public abstract class Task {
-    public abstract void execute() throws Exception;
+import java.io.IOException;
 
+public interface Task {
+     void execute() throws IOException;
 }

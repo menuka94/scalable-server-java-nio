@@ -6,6 +6,8 @@ import java.nio.channels.SocketChannel;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import cs455.scaling.util.Constants;
 import cs455.scaling.util.HashUtil;
 
 public class Client {
@@ -39,7 +41,7 @@ public class Client {
         Random rand = new Random();
         while (true) {
             //create random 8kb message
-            byte[] message = new byte[8192];
+            byte[] message = new byte[Constants.MESSAGE_SIZE];
             rand.nextBytes(message);
             ByteBuffer buffer = ByteBuffer.wrap(message);
             //send the message
