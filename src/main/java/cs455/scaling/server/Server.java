@@ -7,10 +7,11 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Iterator;
 import java.util.Set;
-import cs455.scaling.ThreadPool;
+import cs455.scaling.ThreadPoolManager;
 import cs455.scaling.task.ReadAndRespond;
 import cs455.scaling.task.Register;
 import cs455.scaling.util.Batch;
+import javafx.concurrent.Worker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,7 +26,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class Server {
     private static final Logger log = LogManager.getLogger(Server.class);
-    private static ThreadPool threadPool;
+    private static ThreadPoolManager threadPoolManager;
     private static Batch batch;
 
     public static void main(String[] args) throws IOException, InterruptedException {
@@ -51,76 +52,14 @@ public class Server {
             System.exit(1);
         }
 
-        threadPool = new ThreadPool(threadPoolSize);
-        threadPool.startThreads();
+        ThreadPoolManager threadPoolManager = new ThreadPoolManager(batchSize, batchTime);
+        threadPoolManager.setCurrentBatch(new Batch());
+        threadPoolManager.start();
 
-        batch = new Batch(batchSize, threadPool);
+        // start workers
+        for (int i = 0; i < threadPoolSize; i++) {
 
-        // Open the selector
-        Selector selector = Selector.open();
-
-        // Create input channel
-        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(new InetSocketAddress("localhost", portNum));
-
-        // Register channel to the selector
-        serverSocketChannel.configureBlocking(false);
-        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-
-        // Loop on selector
-        while (true) {
-            log.info("Listening for new connections or messages");
-
-            // block until one or more channels have activity
-            selector.select();
-
-            log.info("\tActivity on selector!");
-
-            // get keys that have activity
-            Set<SelectionKey> selectedKeys = selector.selectedKeys();
-
-            // loop over keys
-            Iterator<SelectionKey> iterator = selectedKeys.iterator();
-
-            while (iterator.hasNext()) {
-                SelectionKey key = iterator.next();
-                if (!key.isValid()) {
-                    continue;
-                }
-
-                // New connection on serverSocketChannel
-                if (key.isAcceptable()) {
-                    register(selector, serverSocketChannel);
-                    // Remove from selectedKeys so we can move to next
-                    // selector.selectedKeys().remove(key);
-
-                    // Re-register with selector so we can receive more connections
-                    // serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-                    if (key.attachment() != null) {
-                        key.attach(null);
-                    }
-                }
-
-                // Previous connection has data to read
-                if (key.isReadable()) {
-                    // TODO: add to a pool and deregister the read interest
-                    // that way, the loop will not be spinning over and over again
-                    readAndRespond(key);
-                    // iterator.remove();
-                }
-            }
-            iterator.remove();
         }
     }
 
-    private static void register(Selector selector, ServerSocketChannel serverSocketChannel)
-            throws InterruptedException {
-        Register register = new Register(selector, serverSocketChannel);
-        batch.addBatchTask(register);
-    }
-
-    private static void readAndRespond(SelectionKey key) throws InterruptedException {
-        ReadAndRespond readAndRespond = new ReadAndRespond(key);
-        batch.addBatchTask(readAndRespond);
-    }
 }

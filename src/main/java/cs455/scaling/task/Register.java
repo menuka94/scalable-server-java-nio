@@ -21,10 +21,12 @@ public class Register implements Task {
     @Override
     public void execute() throws IOException {
         // Grab the incoming socket from the serverSocketChannel
-        SocketChannel client = serverSocketChannel.accept();
+        SocketChannel clientSocketChannel = serverSocketChannel.accept();
+
+        clientSocketChannel.configureBlocking(false);
+
         // Configure it to be a new channel and key that our selector should monitor
-        client.configureBlocking(false);
-        client.register(selector, SelectionKey.OP_READ);
+        clientSocketChannel.register(selector, SelectionKey.OP_READ);
         log.info("\t\tNew Client Registered");
     }
 }
