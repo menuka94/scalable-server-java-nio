@@ -21,9 +21,7 @@ public class ClientReceiver implements Runnable {
         recCount = new AtomicLong(0);
         System.out.println("Starting receiver thread");
 
-        String previous = null;
-        boolean failedLastTime = false;
-        byte[] expected = null;
+        byte[] expected;
         while (true) {
             try {
                 //sha1 hashes are 160 bits long so we only need to allocate 20 bytes
@@ -35,24 +33,15 @@ public class ClientReceiver implements Runnable {
                 }
                 byte[] hash = messageBuffer.array();
 
-                //synchronized (expectedHashes) {
                 expected = expectedHashes.take();
-                //}
 
                 String hashString = new BigInteger(1, hash).toString();
                 String expectedString = new BigInteger(1, expected).toString();
-                //see if hashes match
-
 
                 if (expectedString.equals(hashString)) {
-                    previous = hashString + " : " + expectedString;
                     recCount.getAndIncrement();
-                    //if(recCount.get()%10000==0)System.out.println(recCount + " : "  + System.currentTimeMillis());
                 } else {
-                    //System.out.println("not the same " + expected.length() + " : " + hash.length);
-                    //if(errorCount == 0) System.out.println(previous);
                     System.out.println("Mismatched hash: " + expectedString + " : " + hashString);
-
 
                     byte[] checkMessageDrop = expectedHashes.peek();
                     String checkDrop = new BigInteger(1, checkMessageDrop).toString();
@@ -60,11 +49,7 @@ public class ClientReceiver implements Runnable {
                         System.out.println("Message was dropped somewhere and did not return: " + expectedString);
                         expectedHashes.take();
                     }
-
-
-                    //if(errorCount>60) System.exit(1);
                 }
-
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import cs455.scaling.datastructures.Batch;
+import cs455.scaling.util.Batch;
 import cs455.scaling.task.ReceiveIncomingMessages;
 import cs455.scaling.task.Register;
 import cs455.scaling.task.Task;

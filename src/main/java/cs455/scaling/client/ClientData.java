@@ -1,4 +1,4 @@
-package cs455.scaling.datastructures;
+package cs455.scaling.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

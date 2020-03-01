@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
-import cs455.scaling.datastructures.Batch;
+
 import cs455.scaling.task.ReadAndRespond;
 import cs455.scaling.task.Task;
 

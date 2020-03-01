@@ -1,8 +1,7 @@
 package cs455.scaling.task;
 
 import java.util.concurrent.LinkedBlockingQueue;
-import cs455.scaling.datastructures.Batch;
-import cs455.scaling.task.Task;
+import cs455.scaling.util.Batch;
 
 public class ReadAndRespond implements Task {
     private static LinkedBlockingQueue<Batch> batchQueue = new LinkedBlockingQueue<>();

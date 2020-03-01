@@ -1,4 +1,6 @@
-package cs455.scaling.datastructures;
+package cs455.scaling.util;
+
+import cs455.scaling.client.ClientData;
 
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
