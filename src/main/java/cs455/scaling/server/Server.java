@@ -91,6 +91,11 @@ public class Server {
                 // New connection on serverSocketChannel
                 if (key.isAcceptable()) {
                     register(selector, serverSocketChannel);
+                    // Remove from selectedKeys so we can move to next
+                    selector.selectedKeys().remove(key);
+
+                    // Re-register with selector so we can receive more connections
+                    serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
                 }
 
                 // Previous connection has data to read
@@ -98,10 +103,8 @@ public class Server {
                     // TODO: add to a pool and deregister the read interest
                     // that way, the loop will not be spinning over and over again
                     readAndRespond(key);
+                    // iterator.remove();
                 }
-
-                // Remove it from our set
-                iterator.remove();
             }
         }
     }

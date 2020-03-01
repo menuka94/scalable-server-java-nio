@@ -1,8 +1,7 @@
 package cs455.scaling;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Vector;
 import java.util.concurrent.LinkedBlockingQueue;
 import cs455.scaling.task.Task;
 import cs455.scaling.util.Batch;
@@ -22,13 +21,13 @@ import org.apache.logging.log4j.Logger;
 public class ThreadPool {
     private static final Logger log = LogManager.getLogger(ThreadPool.class);
     private LinkedBlockingQueue<Batch> batchQueue;
-    private ArrayList<Worker> workers;
+    private Vector<Worker> workers;
     private int threadPoolSize;
 
     public ThreadPool(int threadPoolSize) {
         this.threadPoolSize = threadPoolSize;
         batchQueue = new LinkedBlockingQueue<>();
-        workers = new ArrayList<>();
+        workers = new Vector<>();
         for (int i = 0; i < threadPoolSize; i++) {
             workers.add(new Worker());
         }
@@ -49,7 +48,8 @@ public class ThreadPool {
                 Batch batch = null;
                 try {
                     batch = batchQueue.take();
-                    ArrayList<Task> tasks = batch.getTasks();
+                    // batchQueue.remove(batch);
+                    Vector<Task> tasks = batch.getTasks();
                     for (Task task : tasks) {
                         task.execute();
                     }

@@ -1,8 +1,6 @@
 package cs455.scaling.util;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-
+import java.util.Vector;
 import cs455.scaling.ThreadPool;
 import cs455.scaling.task.Task;
 import org.apache.logging.log4j.LogManager;
@@ -11,17 +9,17 @@ import org.apache.logging.log4j.Logger;
 public class Batch {
     private static final Logger log = LogManager.getLogger(Batch.class);
 
-    private ArrayList<Task> tasks;
+    private Vector<Task> tasks;
     private ThreadPool threadPool;
     private int batchSize;
 
     public Batch(int batchSize, ThreadPool threadPool) {
         this.batchSize = batchSize;
-        tasks = new ArrayList<>();
+        tasks = new Vector<>();
         this.threadPool = threadPool;
     }
 
-    public ArrayList<Task> getTasks() {
+    public Vector<Task> getTasks() {
         return tasks;
     }
 
@@ -30,7 +28,7 @@ public class Batch {
             log.info("Adding a new batch of tasks to the ThreadPool");
             threadPool.addBatch(this);
             // reinitialize tasks list
-            tasks = new ArrayList<>();
+            tasks = new Vector<>();
         }
         tasks.add(task);
     }
