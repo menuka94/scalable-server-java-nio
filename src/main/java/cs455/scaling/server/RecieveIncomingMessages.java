@@ -18,7 +18,7 @@ public class RecieveIncomingMessages extends Task {
 
 
     //read all the messages possible out of a channel with incomming messages
-    public void resolve() throws IOException {
+    public void execute() throws IOException {
         //grab the channel we already made for it
         SocketChannel clientChannel = (SocketChannel) key.channel();
 

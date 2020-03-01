@@ -8,37 +8,38 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import cs455.scaling.datastructures.Batch;
-import cs455.scaling.datastructures.TaskQueue;
 
 public class Server {
 
     public static void main(String[] args) {
         if (args.length < 4) {
-            System.out.println("Wrong args: Server port numWorkers batchSize batchTime");
+            System.out.println("Wrong args: port numWorkers batchSize batchTime");
             System.exit(1);
         }
-        int port = Integer.parseInt(args[0]);
+        final int port = Integer.parseInt(args[0]);
+        final int numWorkers = Integer.parseInt(args[1]);
+        final int batchSize = Integer.parseInt(args[2]);
+        final int batchTime = Integer.parseInt(args[3]);
 
         System.out.println("starting server on port " + port);
         //grab the final single instance of the taskqueue that the pool manager uses
-        TaskQueue taskQueue = ThreadPoolManager.taskQueue;
+        LinkedBlockingQueue<Task> taskQueue = ThreadPoolManager.getTaskQueue();
         //initialize the current batch for the first time here so that we know it
         //is created before we spawn any threads
         ThreadPoolManager.currentBatch = new Batch();
 
         //start the thread pool manager and give it the batch time
-        ThreadPoolManager threadPoolManager = new ThreadPoolManager(Integer.parseInt(args[2]),
-                Integer.parseInt(args[3]));
+        ThreadPoolManager threadPoolManager = new ThreadPoolManager(batchSize, batchTime);
         Thread poolManagerThread = new Thread(threadPoolManager);
         poolManagerThread.start();
 
         //spawn as many workers as the args call for
-        int numWorkers = Integer.parseInt(args[1]);
         for (int i = 0; i < numWorkers; i++) {
-            WorkerThread w = new WorkerThread();
-            Thread thread = new Thread(w);
-            thread.start();
+            Worker worker = new Worker();
+            worker.start();
         }
 
         try {
@@ -86,7 +87,7 @@ public class Server {
                         if (currentKey.isAcceptable()) {
                             //System.out.println("Accepting");
                             //create a task to be allocated to a worker thread
-                            AcceptConnection acceptTask = new AcceptConnection(serverSocketChannel, selector);
+                            Register acceptTask = new Register(serverSocketChannel, selector);
                             //add task to some sort of task queue
                             taskQueue.add(acceptTask);
                         }

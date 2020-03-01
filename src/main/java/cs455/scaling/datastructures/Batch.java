@@ -11,17 +11,16 @@ public class Batch {
     /*
     this class needs to contain one batch.
      */
-    private LinkedList<ClientMessages> clients;
+    private LinkedList<ClientData> clients;
     private AtomicLong count;
     private Set<SocketChannel> setOfClients;
     //semaphore that prevents messages from being added while a new client head is being created
     private Semaphore adding;
 
-    //simple constructor create datastructure
     public Batch() {
-        clients = new LinkedList<ClientMessages>();
+        clients = new LinkedList<>();
         count = new AtomicLong(0);
-        setOfClients = new HashSet<SocketChannel>();
+        setOfClients = new HashSet<>();
         adding = new Semaphore(1000);
 
     }
@@ -53,7 +52,7 @@ public class Batch {
                 if (!setOfClients.contains(client)) {
                     //compound check then add operation needs to be synchronized
                     //System.out.println("adding client " + client.getRemoteAddress());
-                    ClientMessages newClient = new ClientMessages(client);
+                    ClientData newClient = new ClientData(client);
                     //add puts element at end of linked list, so we can traverse list
                     //to add messages at the same time as adding clients
                     setOfClients.add(client);
@@ -70,9 +69,9 @@ public class Batch {
         //traverses starting at head
         try {
             adding.acquire();
-            for (ClientMessages c : clients) {
+            for (ClientData c : clients) {
                 //make do only for client that works
-                if (c.getClientChannel().equals(client)) {
+                if (c.getClientSocketChannel().equals(client)) {
                     c.add(message);
                     synchronized (this) {
                         count.getAndIncrement();
@@ -89,19 +88,12 @@ public class Batch {
         } finally {
             adding.release();
         }
-
-
-        /*
-        if a client isnt in this list, aka execution makes it to here, add that client in
-         */
-
-
     }
 
     public void processBatch() {
         //compute hashes and send them back to each client
 
-        for (ClientMessages cl : clients) {
+        for (ClientData cl : clients) {
             //System.out.println("sending back to " + cl.getClientChannel());
             cl.sendMessages();
         }

@@ -7,19 +7,19 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import cs455.scaling.datastructures.Batch;
-import cs455.scaling.datastructures.TaskQueue;
 
 public class ThreadPoolManager implements Runnable {
     //initialize this as a final variable here so only one taskQueue is ever created on
     //a server
-    public static final TaskQueue taskQueue = new TaskQueue();
+//    public static final TaskQueue taskQueue = new TaskQueue();
+    private static final LinkedBlockingQueue<Task> taskQueue = new LinkedBlockingQueue<>();
     public static Batch currentBatch;
     public static HashMap<SocketChannel, Long> cMessagesSent = new HashMap<SocketChannel, Long>();
     //should never have more than 1000 threads running at once
     //sem is needed to control problem of having any number able to add
     //but needing to block all of them if creating a new batch
     public static Semaphore batchSem = new Semaphore(1000);
-    private static BlockingQueue<WorkerThread> threads = new LinkedBlockingQueue<WorkerThread>();
+    private static BlockingQueue<Worker> threads = new LinkedBlockingQueue<Worker>();
     private long batchTime;
     private long batchSize;
 
@@ -27,6 +27,10 @@ public class ThreadPoolManager implements Runnable {
     public ThreadPoolManager(long batchSize, long batchTime) {
         this.batchSize = batchSize;
         this.batchTime = batchTime;
+    }
+
+    public static LinkedBlockingQueue<Task> getTaskQueue() {
+        return taskQueue;
     }
 
     /*
@@ -37,7 +41,7 @@ public class ThreadPoolManager implements Runnable {
 
      */
 
-    public static Task addToPool(WorkerThread thread) {
+    public static Task addToPool(Worker thread) {
         //System.out.println("adding to pool");
 
         synchronized (thread) {
@@ -48,7 +52,7 @@ public class ThreadPoolManager implements Runnable {
                 synchronized (taskQueue) {
                     if (!taskQueue.isEmpty()) {
                         //grab a task out of the front of the queue and resolve it in the thread that is calling this method
-                        return taskQueue.getNext();
+                        return taskQueue.remove();
 
                     }
                     return null;
@@ -59,32 +63,12 @@ public class ThreadPoolManager implements Runnable {
         }
     }
 
-
-    /*
-    public static void allocateThread() throws Exception {
-        //check the task queue and if it has something at the top grab it and give it to a this thread
-        //this is a compound action so we must grab the lock for the taskQueue object
-        Task nextTask = null;
-        synchronized (taskQueue) {
-            if (!taskQueue.isEmpty()) {
-                //grab a task out of the front of the queue and resolve it in the thread that is calling this method
-                nextTask = taskQueue.getNext();
-
-            }
-        }
-        if (nextTask != null) {
-            nextTask.resolve();
-        }
-    }
-     */
-
-
     //run method that will keep a thread spinning on checking batch times and
     //creating new batches
     //only 1 instance of ThreadPoolManager should ever exist at one.
     public void run() {
         Long batchStart = System.currentTimeMillis();
-        ComputeAndSend sendTask;
+        ReadAndRespond sendTask;
         long statTime = System.currentTimeMillis();
         //initialize batch and time
 
@@ -97,7 +81,7 @@ public class ThreadPoolManager implements Runnable {
             //check if batch time is up
             if (!threads.isEmpty()) {
                 //System.out.println("thread ready");
-                WorkerThread next = threads.remove();
+                Worker next = threads.remove();
                 synchronized (next) {
                     next.notify();
                 }
@@ -118,7 +102,7 @@ public class ThreadPoolManager implements Runnable {
                     currentBatch = new Batch();
                     //create a batch process task
                     //System.out.println("here0");
-                    sendTask = new ComputeAndSend(oldBatch);
+                    sendTask = new ReadAndRespond(oldBatch);
                     //add to task queue
                     taskQueue.add(sendTask);
                     //System.out.println("add to q");
@@ -151,20 +135,21 @@ public class ThreadPoolManager implements Runnable {
                     throughput += number;
                 }
 
-                double standardOfDev = 0;
+                double standardDeviation = 0;
 
                 throughput = throughput / 20;
                 double numClients = sentCounts.size();
                 double mean = throughput / numClients;
 
                 for (Long number : sentCounts) {
-                    standardOfDev += Math.pow((double) (number / 20) - mean, 2);
+                    standardDeviation += Math.pow((double) (number / 20) - mean, 2);
                 }
-                standardOfDev = Math.sqrt(standardOfDev / numClients);
+                standardDeviation = Math.sqrt(standardDeviation / numClients);
 
-                System.out.println("Server Throughput: " + throughput + " Active Clients: " + numClients
-                        + " Mean Per-Client Throughput: " + mean + " STD of Mean Throughput: " + standardOfDev);
-
+                System.out.println("Server Throughput: " + throughput);
+                System.out.println("Active Clients: " + numClients);
+                System.out.println(" Mean Per-Client Throughput: " + mean);
+                System.out.println(" STD of Mean Throughput: " + standardDeviation);
 
                 statTime = System.currentTimeMillis();
             }

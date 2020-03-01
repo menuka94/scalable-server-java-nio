@@ -6,7 +6,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import cs455.scaling.Hash;
+import cs455.scaling.util.HashUtil;
 
 public class Client {
     public static void main(String[] args) throws Exception {
@@ -47,7 +47,7 @@ public class Client {
             sentCount++;
 
             //add the hash to the hash checking queue
-            byte[] hash = Hash.hash(message);
+            byte[] hash = HashUtil.hash(message);
             //hashes.add(new BigInteger(1,hash).toString());
             //synchronized (hashes) {
             hashes.add(hash);

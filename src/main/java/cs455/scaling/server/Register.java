@@ -6,17 +6,16 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class AcceptConnection extends Task {
+public class Register extends Task {
     private ServerSocketChannel serverSocketChannel;
-    // private SelectionKey key;
     private Selector selector;
 
-    public AcceptConnection(ServerSocketChannel s, Selector sel) {
-        serverSocketChannel = s;
-        selector = sel;
+    public Register(ServerSocketChannel serverSocketChannel, Selector selector) {
+        this.serverSocketChannel = serverSocketChannel;
+        this.selector = selector;
     }
 
-    public void resolve() throws IOException {
+    public void execute() throws IOException {
 
         synchronized (selector) {
             //System.out.println("Resolving accept connection task");
@@ -29,7 +28,6 @@ public class AcceptConnection extends Task {
             //make sure we dont block in our program
             incomingClientChannel.configureBlocking(false);
 
-
             synchronized (ThreadPoolManager.cMessagesSent) {
                 ThreadPoolManager.cMessagesSent.put(incomingClientChannel, 0L);
             }
@@ -38,11 +36,7 @@ public class AcceptConnection extends Task {
             //register the connection as readable for the selector to pick up
             incomingClientChannel.register(selector, SelectionKey.OP_READ);
             //mark the key as resolved and ready to take out of the queue
-
-
         }
-
-
     }
 
 }

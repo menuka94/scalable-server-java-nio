@@ -1,11 +1,11 @@
 package cs455.scaling.server;
 
-public class WorkerThread implements Runnable {
+public class Worker extends Thread {
     private static int instances = 0;
     public final int tnum;
     Task task;
 
-    public WorkerThread() {
+    public Worker() {
         task = null;
         instances++;
         tnum = instances;
@@ -17,7 +17,7 @@ public class WorkerThread implements Runnable {
         while (true) {
             try {
                 task = ThreadPoolManager.addToPool(this);
-                if (task != null) task.resolve();
+                if (task != null) task.execute();
             } catch (Exception e) {
                 e.printStackTrace();
             }
