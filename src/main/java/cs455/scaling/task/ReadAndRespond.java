@@ -21,14 +21,14 @@ public class ReadAndRespond implements Task {
         ByteBuffer buffer = ByteBuffer.allocate(256);
 
         // Grab the socket from the key
-        SocketChannel client = (SocketChannel) key.channel();
+        SocketChannel clientSocket = (SocketChannel) key.channel();
 
         // Read from it
-        int bytesRead = client.read(buffer);
+        int bytesRead = clientSocket.read(buffer);
 
         // Handle a closed connection
         if (bytesRead == -1) {
-            client.close();
+            clientSocket.close();
             log.info("\t\tClient disconnected.");
         } else {
             // Return the hash of message back to the client
@@ -36,7 +36,7 @@ public class ReadAndRespond implements Task {
 
             // Flip the buffer now write
             buffer.flip();
-            client.write(buffer);
+            clientSocket.write(buffer);
 
             // Clear the buffer
             buffer.clear();

@@ -11,7 +11,7 @@ public class Batch {
 
     private volatile Vector<Task> tasks;
     private ThreadPool threadPool;
-    private int batchSize;
+    private final int batchSize;
 
     public Batch(int batchSize, ThreadPool threadPool) {
         this.batchSize = batchSize;
@@ -24,7 +24,7 @@ public class Batch {
     }
 
     public synchronized void addBatchTask(Task task) throws InterruptedException {
-        log.info("BatchSize: " + batchSize);
+        log.info("tasks.size(): " + tasks.size());
         if (tasks.size() == batchSize) {
             log.info("Adding a new batch of tasks to the ThreadPool");
             // reinitialize tasks list

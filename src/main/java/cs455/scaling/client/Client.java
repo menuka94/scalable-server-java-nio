@@ -34,7 +34,7 @@ public class Client {
         LinkedBlockingQueue<String> hashes = new LinkedBlockingQueue<>();
 
         if (args.length != 3) {
-            log.warn("Invalid number of arguments. Provide <server-host> <server-port> " +
+            log.warn("Invalid arguments. Provide <server-host> <server-port> " +
                     "<message-rate>");
             System.exit(1);
         }
@@ -59,16 +59,14 @@ public class Client {
         // Connect to the server
         socketChannel = SocketChannel.open(new InetSocketAddress(serverHost, serverPort));
 
-
         // Create buffer
         buffer = ByteBuffer.allocate(256);
 
         buffer = ByteBuffer.wrap("Please send this back to me.".getBytes());
-        String response = null;
         socketChannel.write(buffer);
         buffer.clear();
         socketChannel.read(buffer);
-        response = new String(buffer.array()).trim();
+        String response = new String(buffer.array()).trim();
         log.info("Server responded with: " + response);
         buffer.clear();
 

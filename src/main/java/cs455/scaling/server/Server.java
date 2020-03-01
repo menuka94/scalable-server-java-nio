@@ -30,7 +30,7 @@ public class Server {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         if (args.length != 4) {
-            log.warn("Invalid number of arguments. Provide <port-num> <thread-pool-size> " +
+            log.warn("Invalid arguments. Provide <port-num> <thread-pool-size> " +
                     "<batch-size> <batch-time>");
             System.exit(1);
         }
@@ -73,54 +73,39 @@ public class Server {
 
             // block until one or more channels have activity
             selector.select();
-
-            log.info("\tActivity on selector!");
+//            log.info("\tActivity on selector!");
 
             // get keys that have activity
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
 
             // loop over keys
             Iterator<SelectionKey> iterator = selectedKeys.iterator();
-
             while (iterator.hasNext()) {
                 SelectionKey key = iterator.next();
+
                 if (!key.isValid()) {
                     continue;
                 }
 
                 // New connection on serverSocketChannel
                 if (key.isAcceptable()) {
-                    register(selector, serverSocketChannel);
-                    // Remove from selectedKeys so we can move to next
-                    // selector.selectedKeys().remove(key);
-
-                    // Re-register with selector so we can receive more connections
-                    // serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-                    if (key.attachment() != null) {
-                        key.attach(null);
-                    }
+                    log.info("\tRegister");
+                    Register register = new Register(selector, serverSocketChannel);
+//                    batch.addBatchTask(register);
+                    register.execute();
                 }
 
                 // Previous connection has data to read
                 if (key.isReadable()) {
                     // TODO: add to a pool and deregister the read interest
                     // that way, the loop will not be spinning over and over again
-                    readAndRespond(key);
-                    // iterator.remove();
+                    log.info("\tReadAndRespond");
+                    ReadAndRespond readAndRespond = new ReadAndRespond(key);
+                    readAndRespond.execute();
+//                    batch.addBatchTask(readAndRespond);
                 }
+                iterator.remove();
             }
-            iterator.remove();
         }
-    }
-
-    private static void register(Selector selector, ServerSocketChannel serverSocketChannel)
-            throws InterruptedException {
-        Register register = new Register(selector, serverSocketChannel);
-        batch.addBatchTask(register);
-    }
-
-    private static void readAndRespond(SelectionKey key) throws InterruptedException {
-        ReadAndRespond readAndRespond = new ReadAndRespond(key);
-        batch.addBatchTask(readAndRespond);
     }
 }
