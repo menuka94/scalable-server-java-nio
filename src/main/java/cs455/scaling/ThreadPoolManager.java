@@ -19,22 +19,45 @@ import org.apache.logging.log4j.Logger;
  * 3. Organizing data into batches to improve performance
  * 4. Sending data over any of these links
  */
-public class ThreadPool {
-    private static final Logger log = LogManager.getLogger(ThreadPool.class);
+public class ThreadPoolManager extends Thread {
+    private static final Logger log = LogManager.getLogger(ThreadPoolManager.class);
     private volatile LinkedBlockingQueue<Batch> batchQueue;
+    private Batch currentBatch;
     private volatile Vector<Worker> workers;
-    private int threadPoolSize;
+    private final int threadPoolSize;
+    private final int batchSize;
+    private final int batchTime;
 
-    public ThreadPool(int threadPoolSize) {
+    public ThreadPoolManager(int threadPoolSize, int batchSize, int batchTime) {
         this.threadPoolSize = threadPoolSize;
+        this.batchSize = batchSize;
+        this.batchTime = batchTime;
         batchQueue = new LinkedBlockingQueue<>();
+        currentBatch = new Batch();
         workers = new Vector<>();
         for (int i = 0; i < threadPoolSize; i++) {
-            workers.add(new Worker());
+            workers.add(new Worker("Worker " + (i+1)));
         }
     }
 
-    public void startThreads() {
+    @Override
+    public void run() {
+        Long batchStart = System.currentTimeMillis();
+
+    }
+
+    public synchronized void addTask(Task task) {
+        log.info("currentBatch.getCurrentSize: " + currentBatch.getCurrentSize());
+        if (currentBatch.getCurrentSize() < batchSize) {
+            currentBatch.addTask(task);
+        } else {
+            batchQueue.add(currentBatch);
+            currentBatch = new Batch();
+            currentBatch.addTask(task);
+        }
+    }
+
+    public void startWorkers() {
         for (Worker worker : workers) {
             worker.start();
         }
@@ -43,30 +66,37 @@ public class ThreadPool {
     private class Worker extends Thread {
         private final Logger log = LogManager.getLogger(Worker.class);
 
+        public Worker(String name) {
+            super(name);
+        }
+
         @Override
         public void run() {
             log.info("Worker starting ...");
             while (true) {
                 Batch batch = null;
                 try {
-                    log.info("Size of batchQueue: " + batchQueue.size());
                     batch = batchQueue.take();
-                    log.info("New Size of batchQueue (after taking one): " + batchQueue.size());
+                    log.info("Worker taking one batch to process");
                     Vector<Task> tasks = batch.getTasks();
                     Iterator<Task> iterator = tasks.iterator();
+                    log.info("tasks.size(): " + tasks.size());
+                    int i = 0;
                     while (iterator.hasNext()) {
+                        log.info("Executing task " + ++i);
                         Task task = iterator.next();
-                        task.execute();
+                        if(task == null) {
+                            log.warn("Task is null");
+                        } else {
+                            task.execute();
+                        }
                     }
                 } catch (InterruptedException | IOException e) {
-                    log.error(e.getStackTrace());
+                    log.error("Error in Worker");
+                    e.printStackTrace();
                 }
             }
         }
-    }
-
-    public void addBatch(Batch batch) throws InterruptedException {
-        batchQueue.put(batch);
     }
 
     public int getThreadPoolSize() {

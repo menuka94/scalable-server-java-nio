@@ -17,6 +17,7 @@ public class ReadAndRespond implements Task {
 
     @Override
     public void execute() throws IOException {
+        log.info("ReadAndRespond.execute()");
         // Create a buffer to read into
         ByteBuffer buffer = ByteBuffer.allocate(256);
 

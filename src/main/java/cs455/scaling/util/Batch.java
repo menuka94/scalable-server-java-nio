@@ -1,7 +1,7 @@
 package cs455.scaling.util;
 
 import java.util.Vector;
-import cs455.scaling.ThreadPool;
+
 import cs455.scaling.task.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -10,28 +10,20 @@ public class Batch {
     private static final Logger log = LogManager.getLogger(Batch.class);
 
     private volatile Vector<Task> tasks;
-    private ThreadPool threadPool;
-    private final int batchSize;
 
-    public Batch(int batchSize, ThreadPool threadPool) {
-        this.batchSize = batchSize;
+    public Batch() {
         tasks = new Vector<>();
-        this.threadPool = threadPool;
+    }
+
+    public void addTask(Task task) {
+        tasks.add(task);
     }
 
     public Vector<Task> getTasks() {
         return tasks;
     }
 
-    public synchronized void addBatchTask(Task task) throws InterruptedException {
-        log.info("tasks.size(): " + tasks.size());
-        if (tasks.size() == batchSize) {
-            log.info("Adding a new batch of tasks to the ThreadPool");
-            // reinitialize tasks list
-            tasks = new Vector<>();
-
-            threadPool.addBatch(this);
-        }
-        tasks.add(task);
+    public int getCurrentSize() {
+        return tasks.size();
     }
 }

@@ -7,7 +7,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Iterator;
 import java.util.Set;
-import cs455.scaling.ThreadPool;
+import cs455.scaling.ThreadPoolManager;
 import cs455.scaling.task.ReadAndRespond;
 import cs455.scaling.task.Register;
 import cs455.scaling.util.Batch;
@@ -25,7 +25,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class Server {
     private static final Logger log = LogManager.getLogger(Server.class);
-    private static ThreadPool threadPool;
+    private static ThreadPoolManager threadPoolManager;
     private static Batch batch;
 
     public static void main(String[] args) throws IOException, InterruptedException {
@@ -51,10 +51,9 @@ public class Server {
             System.exit(1);
         }
 
-        threadPool = new ThreadPool(threadPoolSize);
-        threadPool.startThreads();
-
-        batch = new Batch(batchSize, threadPool);
+        threadPoolManager = new ThreadPoolManager(threadPoolSize, batchSize, batchTime);
+        threadPoolManager.start();
+        threadPoolManager.startWorkers();
 
         // Open the selector
         Selector selector = Selector.open();
@@ -87,12 +86,19 @@ public class Server {
                     continue;
                 }
 
+                key.interestOps(key.interestOps() & ~key.readyOps());
+
                 // New connection on serverSocketChannel
                 if (key.isAcceptable()) {
                     log.info("\tRegister");
                     Register register = new Register(selector, serverSocketChannel);
-//                    batch.addBatchTask(register);
-                    register.execute();
+                    threadPoolManager.addTask(register);
+
+                    // remove from selectedKeys so we can move to the next
+                    selector.selectedKeys().remove(key);
+
+                    // re-register with selector to receive more connections
+                    serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
                 }
 
                 // Previous connection has data to read
@@ -101,10 +107,9 @@ public class Server {
                     // that way, the loop will not be spinning over and over again
                     log.info("\tReadAndRespond");
                     ReadAndRespond readAndRespond = new ReadAndRespond(key);
-                    readAndRespond.execute();
-//                    batch.addBatchTask(readAndRespond);
+                    threadPoolManager.addTask(readAndRespond);
                 }
-                iterator.remove();
+//                iterator.remove();
             }
         }
     }
