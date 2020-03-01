@@ -1,4 +1,4 @@
-package cs455.scaling.server;
+package cs455.scaling.util;
 
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -7,6 +7,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import cs455.scaling.datastructures.Batch;
+import cs455.scaling.task.ReadAndRespond;
+import cs455.scaling.task.Task;
 
 public class ThreadPoolManager extends Thread {
     //initialize this as a final variable here so only one taskQueue is ever created on

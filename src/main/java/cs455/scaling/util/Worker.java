@@ -1,4 +1,6 @@
-package cs455.scaling.server;
+package cs455.scaling.util;
+
+import cs455.scaling.task.Task;
 
 public class Worker extends Thread {
     private static int instances = 0;
@@ -21,8 +23,6 @@ public class Worker extends Thread {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            //count++;
-            //if(count%10 == 0) System.out.println("thread number " + tnum);
         }
     }
 }
