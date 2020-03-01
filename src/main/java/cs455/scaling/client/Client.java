@@ -1,85 +1,112 @@
 package cs455.scaling.client;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Date;
 import java.util.Random;
-import java.util.concurrent.LinkedBlockingQueue;
-import cs455.scaling.util.HashUtil;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import cs455.scaling.shared.GlobalLogger;
 
-/**
- * Unlike the server node, there are multiple Clients (minimum of 100) in the system.
- * A client provides the following functionalities:
- * (1) Connect and maintain an active connection to the server.
- * (2) Regularly send data packets to the server. The payloads for these data packets are 8 KB and
- * the values for these bytes are randomly generated. The rate at which each connection will
- * generate packets is R per-second; include a Thread.sleep(1000/R) in the client which ensures
- * that you achieve the targeted production rate. The typical value of R is between 2-4.
- * (3) The client should track hashcodes of the data packets that it has sent to the server.
- * A server will acknowledge every packet that it has received by sending the computed hash code
- * back to the client.
- */
 public class Client {
-    private static final Logger log = LogManager.getLogger(Client.class);
 
-    private static SocketChannel socketChannel;
-    private static ByteBuffer buffer;
+    private final InetAddress serverHost;
+    private final int serverPort;
+    private final int messageRate;
 
-    public static void main(String[] args) throws IOException, NoSuchAlgorithmException,
-            InterruptedException {
-        LinkedBlockingQueue<String> hashes = new LinkedBlockingQueue<>();
+    public Client(InetAddress serverHost, int serverPort, int messageRate) {
+        this.serverHost = serverHost;
+        this.serverPort = serverPort;
+        this.messageRate = messageRate;
+    }
 
-        if (args.length != 3) {
-            log.warn("Invalid number of arguments. Provide <server-host> <server-port> " +
-                    "<message-rate>");
-            System.exit(1);
+    public static void main(String[] args) {
+        ClientArgumentParser parser = new ClientArgumentParser(args);
+        if (parser.isValid()) {
+            Client client = new Client(parser.getServerHost(), parser.getServerPort(), parser.getMessageRate());
+            client.run();
         }
+    }
 
-        String serverHost = args[0];
-        int serverPort = 0;
-        int messageRate = 0;
+    public void run() {
+        Socket server = new Socket();
         try {
-            serverPort = Integer.parseInt(args[1]);
-            messageRate = Integer.parseInt(args[2]);
-        } catch (NumberFormatException e) {
-            log.error(e.getStackTrace());
-            log.info("Invalid arguments. Exiting ...");
-            System.exit(1);
+            server.setKeepAlive(true);
+        } catch (SocketException e) {
+            GlobalLogger.warning(this, "Failed to set keep-alive to true on socket.");
         }
 
-        long sleepTime = 1000 / messageRate;
+        try {
+            server.connect(new InetSocketAddress(serverHost, serverPort));
+        } catch (IOException e) {
+            GlobalLogger.severe(this, "Failed to connect to server, exiting...");
+            return;
+        }
 
-        // Connect to the server
-        socketChannel = SocketChannel.open(new InetSocketAddress(serverHost, serverPort));
+        byte[] data = new byte[8192];
+        byte[] hash = new byte[20];
+        Random random = new Random(new Date().getTime());
+        BufferedOutputStream out;
+        try {
+            out = new BufferedOutputStream(server.getOutputStream());
+        } catch (IOException e) {
+            GlobalLogger.severe(this, "Failed to get server output stream, exiting...");
+            return;
+        }
 
+        BufferedInputStream in;
+        try {
+            in = new BufferedInputStream(server.getInputStream());
+        } catch (IOException e) {
+            GlobalLogger.severe(this, "Failed to get server input stream, exiting...");
+            return;
+        }
 
-        // Create buffer
-        buffer = ByteBuffer.allocate(256);
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA1");
+        } catch (NoSuchAlgorithmException e1) {
+            GlobalLogger.severe(this, "Failed to get digest algorithm, exiting...");
+            return;
+        }
 
-        buffer = ByteBuffer.wrap("Please send this back to me.".getBytes());
-        String response = null;
-        socketChannel.write(buffer);
-        buffer.clear();
-        socketChannel.read(buffer);
-        response = new String(buffer.array()).trim();
-        log.info("Server responded with: " + response);
-        buffer.clear();
+        ListenerThread listener = new ListenerThread(in);
+        listener.start();
 
-//        Random random = new Random();
-//        while (true) {
-//            // an 8KB message
-//            byte[] message = new byte[8192];
-//            random.nextBytes(message);
-//
-//            // prepare to message to send
-//            ByteBuffer buffer = ByteBuffer.wrap(message);
-//
-//            String hashedMessage = HashUtil.SHA1FromBytes(message);
-//            hashes.put(hashedMessage);
-//        }
+        try {
+            String host = InetAddress.getLocalHost().getHostName();
+            GlobalLogger.info(this, "Client running at " + host + " with a refresh rate of " + messageRate);
+        } catch (UnknownHostException ex) {
+            GlobalLogger.info(this, "Client running with message rate of " + messageRate);
+        }
+
+        while (true) {
+            random.nextBytes(data);
+            // Calculate digest
+            hash = digest.digest(data);
+            // Add to the response list
+            listener.addHash(hash);
+
+            try {
+                GlobalLogger.info(this, "Sending " + new BigInteger(1, hash).toString(16));
+                out.write(data, 0, data.length);
+                out.flush();
+            } catch (IOException e) {
+                GlobalLogger.severe(this, "Failed to write bytes to server.");
+            }
+
+            try {
+                Thread.sleep(1000 / messageRate);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

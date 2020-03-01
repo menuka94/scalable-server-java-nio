@@ -1,122 +1,146 @@
 package cs455.scaling.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.Set;
-import cs455.scaling.ThreadPool;
-import cs455.scaling.task.ReadAndRespond;
-import cs455.scaling.task.Register;
-import cs455.scaling.util.Batch;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import cs455.scaling.server.workers.ReadWorker;
+import cs455.scaling.shared.GlobalLogger;
 
-/**
- * There is exactly one server node in the system.
- * The server node provides the following functions:
- * A. Accepts incoming network connections from the clients.
- * B. Accepts incoming traffic from these connections
- * C. Groups data from the clients together into batches
- * D. Replies to clients by sending back a hash code for each message received.
- * E. The server performs functions A, B, C, and D by relying on the thread pool.
- */
 public class Server {
-    private static final Logger log = LogManager.getLogger(Server.class);
-    private static ThreadPool threadPool;
-    private static Batch batch;
+    public static int servedCounter = 0;
+    private final int port;
+    private final ThreadPool threadPool;
+    private volatile boolean isRunning = true;
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-        if (args.length != 4) {
-            log.warn("Invalid number of arguments. Provide <port-num> <thread-pool-size> " +
-                    "<batch-size> <batch-time>");
-            System.exit(1);
+    public Server(int port, int threadCount) {
+        this.port = port;
+        threadPool = new ThreadPool(threadCount, new WorkerQueue());
+    }
+
+    public synchronized static void incrementServed() {
+        servedCounter++;
+    }
+
+    public static void main(String[] args) {
+
+        ServerArgumentParser parser = new ServerArgumentParser(args);
+
+        if (parser.isValid()) {
+            Server s = new Server(parser.getPortNum(), parser.getThreadPoolSize());
+            Runtime.getRuntime().addShutdownHook(new ShutdownThread(s));
+            s.run();
+        }
+    }
+
+    public void run() {
+        try {
+            GlobalLogger.info(this, "Starting server on " + InetAddress.getLocalHost().getHostName());
+        } catch (UnknownHostException ex) {
+            GlobalLogger.info(this, "Starting server... ");
         }
 
-        int portNum = 0;
-        int threadPoolSize = 0;
-        int batchSize = 0;
-        int batchTime = 0;
+        threadPool.start();
+        GlobalLogger.info(this, "ThreadPool size: " + threadPool.getNumberOfWorkers());
+        GlobalLogger.info(this, "");
 
         try {
-            portNum = Integer.parseInt(args[0]);
-            threadPoolSize = Integer.parseInt(args[1]);
-            batchSize = Integer.parseInt(args[2]);
-            batchTime = Integer.parseInt(args[3]);
-        } catch (NumberFormatException e) {
-            log.error(e.getStackTrace());
-            log.info("Invalid arguments. Exiting ...");
-            System.exit(1);
-        }
+            Selector selector = Selector.open();
+            ServerSocketChannel serverChannel = ServerSocketChannel.open();
+            serverChannel.configureBlocking(false);
+            InetSocketAddress isa = new InetSocketAddress(InetAddress.getLocalHost(), port);
+            serverChannel.socket().bind(isa);
+            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+            ThreadSafeSelector tselector = new ThreadSafeSelector(selector);
+            ServerStatus status = new ServerStatus();
+            int count = 0;
 
-        threadPool = new ThreadPool(threadPoolSize);
-        threadPool.startThreads();
+            while (isRunning) {
+                int selected = selector.select(1);
+                if (selected > 0 && isRunning) {
+                    Iterator<SelectionKey> itr = selector.selectedKeys().iterator();
+                    while (itr.hasNext() && !Thread.interrupted()) {
+                        SelectionKey cur = itr.next();
+                        itr.remove();
+                        // Disable interest in these ops
+                        cur.interestOps(cur.interestOps() & ~cur.readyOps());
+                        if (cur.isAcceptable() && cur.channel() instanceof ServerSocketChannel) {
+                            SocketChannel client = ((ServerSocketChannel) cur.channel()).accept();
+                            client.configureBlocking(false);
+                            status.addClient();
+                            // Add new socket to selector
+                            client.register(selector, SelectionKey.OP_READ);
 
-        batch = new Batch(batchSize, threadPool);
+                            // Remove from selectedKeys so we can move to next
+                            selector.selectedKeys().remove(cur);
 
-        // Open the selector
-        Selector selector = Selector.open();
+                            // Re-register with selector so we can receive more connections
+                            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+                        } else if (cur.isReadable() && cur.channel() instanceof SocketChannel && (cur.attachment() == null || cur.attachment() instanceof ReadWorker)) {
+                            SocketChannel channel = (SocketChannel) cur.channel();
+                            Object reader = cur.attachment();
+                            cur.cancel();
 
-        // Create input channel
-        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(new InetSocketAddress("localhost", portNum));
+                            // If this is a continuation or an initial read.
+                            if (reader == null) {
+                                threadPool.addWorker(new ReadWorker(tselector, channel, status));
+                            } else {
+                                threadPool.addWorker((ReadWorker) reader);
+                            }
 
-        // Register channel to the selector
-        serverSocketChannel.configureBlocking(false);
-        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-
-        // Loop on selector
-        while (true) {
-            log.info("Listening for new connections or messages");
-
-            // block until one or more channels have activity
-            selector.select();
-
-            log.info("\tActivity on selector!");
-
-            // get keys that have activity
-            Set<SelectionKey> selectedKeys = selector.selectedKeys();
-
-            // loop over keys
-            Iterator<SelectionKey> iterator = selectedKeys.iterator();
-
-            while (iterator.hasNext()) {
-                SelectionKey key = iterator.next();
-                if (!key.isValid()) {
-                    continue;
+                        } else if (!cur.isValid()) {
+                            if (cur.channel() != null && !((SocketChannel) cur.channel()).isOpen()) {
+                                status.removeClient();
+                            }
+                        }
+                    }
                 }
 
-                // New connection on serverSocketChannel
-                if (key.isAcceptable()) {
-                    register(selector, serverSocketChannel);
-                    // Remove from selectedKeys so we can move to next
-                    selector.selectedKeys().remove(key);
+                // Print out server stats every 30 seconds or so.
+                if (count++ == 5000) {
+                    count = 0;
 
-                    // Re-register with selector so we can receive more connections
-                    serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+                    GlobalLogger.info(this, "===================");
+                    GlobalLogger.info(this, "Status Report:");
+                    GlobalLogger.info(this, "===================");
+                    GlobalLogger.info(this, "Clients connected: " + status.getClientCount());
+                    GlobalLogger.info(this, "Packets per second: " + status.getPacketsPerSecond());
+                    GlobalLogger.info(this, "Uptime: " + status.getUptime().getFormatted());
+                    GlobalLogger.info(this, "");
                 }
 
-                // Previous connection has data to read
-                if (key.isReadable()) {
-                    // TODO: add to a pool and deregister the read interest
-                    // that way, the loop will not be spinning over and over again
-                    readAndRespond(key);
-                    // iterator.remove();
+                if (selected <= 0) {
+                    tselector.flushPendingRegisters();
                 }
             }
+
+            selector.close();
+            threadPool.shutdown();
+        } catch (IOException ex) {
+            GlobalLogger.severe(this, "IO Exception: " + ex.getMessage());
         }
     }
 
-    private static void register(Selector selector, ServerSocketChannel serverSocketChannel)
-            throws InterruptedException {
-        Register register = new Register(selector, serverSocketChannel);
-        batch.addBatchTask(register);
+    public void stop() {
+        isRunning = false;
+        Thread.currentThread().interrupt();
     }
 
-    private static void readAndRespond(SelectionKey key) throws InterruptedException {
-        ReadAndRespond readAndRespond = new ReadAndRespond(key);
-        batch.addBatchTask(readAndRespond);
+    public static class ShutdownThread extends Thread {
+        private final Server server;
+
+        public ShutdownThread(Server server) {
+            this.server = server;
+        }
+
+        @Override
+        public void run() {
+            server.stop();
+        }
     }
 }
