@@ -25,7 +25,9 @@ public class ReceiveIncomingMessages implements Task {
 
         synchronized (ThreadPoolManager.clientMessagesSent) {
             Long sentNum = ThreadPoolManager.clientMessagesSent.get(clientChannel);
-            if (sentNum == null) sentNum = new Long(0);
+            if (sentNum == null) {
+                sentNum = 0L;
+            }
             ThreadPoolManager.clientMessagesSent.put(clientChannel, sentNum + 1);
         }
 

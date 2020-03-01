@@ -39,9 +39,9 @@ public class Batch {
         //check if you need to add before synchronizing, so if a thread doesnt need to add
         //we dont slow down with synchronization barriers
 
-        if (!socketChannels.contains(client)) {
-            //multiple threads could enter here though for adding the same client
-            //make sure they go sequentially after each other
+//        if (!socketChannels.contains(client)) {
+//            //multiple threads could enter here though for adding the same client
+//            //make sure they go sequentially after each other
             try {
                 addingSemaphore.acquire(1000);
                 //only add if you are the first thread though this block
@@ -60,7 +60,7 @@ public class Batch {
             } finally {
                 addingSemaphore.release(1000);
             }
-        }
+//        }
 
         //traverses starting at head
         try {
@@ -85,11 +85,8 @@ public class Batch {
 
     public void processBatch() {
         //compute hashes and send them back to each client
-
         for (ClientData clientData : clientDataList) {
             clientData.sendMessages();
         }
     }
-
-
 }

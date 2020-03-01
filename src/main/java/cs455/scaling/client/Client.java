@@ -9,32 +9,33 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import cs455.scaling.util.Constants;
 import cs455.scaling.util.HashUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class Client {
+    private static final Logger log = LogManager.getLogger(Client.class);
+
     public static void main(String[] args) throws Exception {
-        if (args.length < 3) {
-            System.out.println("wrong arguments. Requires: serverHostname serverPort sendingRate");
+        if (args.length != 3) {
+            log.warn("Invalid arguments. Provide <server-host> <server-port> " +
+                    "<message-rate>");
             System.exit(1);
         }
 
-        //know the server port
-        String hostName = args[0];
-        int port = Integer.parseInt(args[1]);
-        //determine the rate of message sending and set a corresponding time for a thread to sleep to achieve that.
-        int rate = Integer.parseInt(args[2]);
-        int sleepTime = 1000 / rate;
+        String serverHost = args[0];
+        int serverPort = Integer.parseInt(args[1]);
+        int messageRate = Integer.parseInt(args[2]);
+        int sleepTime = 1000 / messageRate;
 
         //use a queue to keep track of which hash needs to come from server back next
-        BlockingQueue<byte[]> hashes = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<byte[]> hashes = new LinkedBlockingQueue<>();
 
         //initialize the socketChannel that will talk to the server
-        InetSocketAddress datAddr = new InetSocketAddress(hostName, port);
+        InetSocketAddress datAddr = new InetSocketAddress(serverHost, serverPort);
         SocketChannel datClient = SocketChannel.open(datAddr);
 
-        //System.out.println("Creating and starting receiver thread");
         ClientReceiver receiver = new ClientReceiver(datClient, hashes);
-        Thread recThread = new Thread(receiver);
-        recThread.start();
+        receiver.start();
         long statStartTime = System.currentTimeMillis();
         long sentCount = 0;
 
@@ -48,21 +49,15 @@ public class Client {
             datClient.write(buffer);
             sentCount++;
 
-            //add the hash to the hash checking queue
             byte[] hash = HashUtil.hash(message);
-            //hashes.add(new BigInteger(1,hash).toString());
-            //synchronized (hashes) {
             hashes.add(hash);
-            //}
-            //sleep for the right amount of time so that we achieve the rate we want
-            Long currentTime = System.currentTimeMillis();
+            long currentTime = System.currentTimeMillis();
             if (currentTime - statStartTime > 20000) {
-                System.out.println(java.time.LocalTime.now() + " Total Sent: " + sentCount + " Total Recieved: " + receiver.recCount);
+                System.out.println(java.time.LocalTime.now() + " Total Sent: " + sentCount + " Total Received: " + receiver.recCount);
                 statStartTime = System.currentTimeMillis();
                 sentCount = 0;
                 receiver.recCount.set(0);
             }
-
             Thread.sleep(sleepTime);
         }
     }

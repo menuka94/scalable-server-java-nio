@@ -15,16 +15,20 @@ import cs455.scaling.task.ReceiveIncomingMessages;
 import cs455.scaling.task.Register;
 import cs455.scaling.task.Task;
 import cs455.scaling.util.ThreadPoolManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class Server {
+    private static final Logger log = LogManager.getLogger(Server.class);
 
     public static void main(String[] args) {
         if (args.length != 4) {
-            System.out.println("Wrong args: port numWorkers batchSize batchTime");
+            log.warn("Invalid arguments. Provide <port-num> <thread-pool-size> " +
+                    "<batch-size> <batch-time>");
             System.exit(1);
         }
         final int port = Integer.parseInt(args[0]);
-        final int numWorkers = Integer.parseInt(args[1]);
+        final int threadPoolSize = Integer.parseInt(args[1]);
         final int batchSize = Integer.parseInt(args[2]);
         final int batchTime = Integer.parseInt(args[3]);
 
@@ -40,7 +44,7 @@ public class Server {
         threadPoolManager.start();
 
         //spawn as many workers as the args call for
-        threadPoolManager.startWorkers(numWorkers);
+        threadPoolManager.startWorkers(threadPoolSize);
 
         try {
             //open selector
@@ -71,11 +75,11 @@ public class Server {
                 //go over all the keys and handle them
                 while (iterator.hasNext()) {
                     //System.out.println("inside iterator loop: ");
-                    SelectionKey currentKey = iterator.next();
+                    SelectionKey key = iterator.next();
 
                     //accept the key correctly
                     synchronized (selector) {
-                        if (currentKey.isAcceptable()) {
+                        if (key.isAcceptable()) {
                             //create a task to be allocated to a worker thread
                             Register acceptTask = new Register(serverSocketChannel, selector);
                             //add task to some sort of task queue
@@ -83,11 +87,11 @@ public class Server {
                         }
 
                         //read the key if it needs to be read
-                        else if (currentKey.isReadable()) {
+                        else if (key.isReadable()) {
                             //mark the key as in the queue, and should not be added again
-                            if (currentKey.attachment() == null) {
+                            if (key.attachment() == null) {
                                 //create a task for receiving the messages
-                                ReceiveIncomingMessages recTask = new ReceiveIncomingMessages(currentKey);
+                                ReceiveIncomingMessages recTask = new ReceiveIncomingMessages(key);
                                 //add to the task queue
                                 taskQueue.add(recTask);
                             }

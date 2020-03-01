@@ -4,19 +4,21 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class ClientReceiver implements Runnable {
+public class ClientReceiver extends Thread {
 
     public AtomicLong recCount;
     private SocketChannel myChannel;
-    private BlockingQueue<byte[]> expectedHashes;
+    private LinkedBlockingQueue<byte[]> expectedHashes;
 
-    public ClientReceiver(SocketChannel myChannel, BlockingQueue<byte[]> expectedHashes) {
+    public ClientReceiver(SocketChannel myChannel, LinkedBlockingQueue<byte[]> expectedHashes) {
         this.myChannel = myChannel;
         this.expectedHashes = expectedHashes;
     }
 
+    @Override
     public void run() {
         recCount = new AtomicLong(0);
         System.out.println("Starting receiver thread");
@@ -54,6 +56,5 @@ public class ClientReceiver implements Runnable {
                 e.printStackTrace();
             }
         }
-
     }
 }

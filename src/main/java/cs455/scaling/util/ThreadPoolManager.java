@@ -22,14 +22,13 @@ public class ThreadPoolManager extends Thread {
     private long batchTime;
     private long batchSize;
 
-
     public ThreadPoolManager(long batchSize, long batchTime) {
         this.batchSize = batchSize;
         this.batchTime = batchTime;
     }
 
-    public void startWorkers(int numWorkers) {
-        for (int i = 0; i < numWorkers; i++) {
+    public void startWorkers(int threadPoolSize) {
+        for (int i = 0; i < threadPoolSize; i++) {
             Worker worker = new Worker();
             worker.start();
         }
