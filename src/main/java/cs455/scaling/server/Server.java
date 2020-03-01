@@ -35,32 +35,24 @@ public class Server {
         System.out.println("Starting server on port " + port);
 
         LinkedBlockingQueue<Task> taskQueue = ThreadPoolManager.getTaskQueue();
-        //initialize the current batch for the first time here so that we know it
-        //is created before we spawn any threads
         ThreadPoolManager.setCurrentBatch(new Batch());
 
-        //start the thread pool manager and give it the batch time
         ThreadPoolManager threadPoolManager = new ThreadPoolManager(batchSize, batchTime);
         threadPoolManager.start();
 
-        //spawn as many workers as the args call for
         threadPoolManager.startWorkers(threadPoolSize);
 
         try {
-            //open selector
             Selector selector = Selector.open();
 
-            //open server socket on the port we specified
             ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-            String hostname = InetAddress.getLocalHost().getHostName();
-            InetSocketAddress address = new InetSocketAddress(hostname, port);
+            InetSocketAddress socketAddress = new InetSocketAddress(InetAddress.getLocalHost().getHostName(), port);
 
-            serverSocketChannel.bind(address);
+            serverSocketChannel.bind(socketAddress);
 
-            //make sure that we are doing non blocking io
             serverSocketChannel.configureBlocking(false);
 
-            //idk why I have to do this but it makes nio work
+            // make nio work
             serverSocketChannel.register(selector, serverSocketChannel.validOps());
 
             while (true) {

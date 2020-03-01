@@ -17,8 +17,7 @@ public class Client {
 
     public static void main(String[] args) throws Exception {
         if (args.length != 3) {
-            log.warn("Invalid arguments. Provide <server-host> <server-port> " +
-                    "<message-rate>");
+            log.warn("Invalid arguments. Provide <server-host> <server-port> <message-rate>");
             System.exit(1);
         }
 
@@ -27,29 +26,26 @@ public class Client {
         int messageRate = Integer.parseInt(args[2]);
         int sleepTime = 1000 / messageRate;
 
-        //use a queue to keep track of which hash needs to come from server back next
+        // to keep track of hashes received from the server
         LinkedBlockingQueue<byte[]> hashes = new LinkedBlockingQueue<>();
 
         //initialize the socketChannel that will talk to the server
-        InetSocketAddress datAddr = new InetSocketAddress(serverHost, serverPort);
-        SocketChannel datClient = SocketChannel.open(datAddr);
+        InetSocketAddress socketAddress = new InetSocketAddress(serverHost, serverPort);
+        SocketChannel socketChannel = SocketChannel.open(socketAddress);
 
-        ClientReceiver receiver = new ClientReceiver(datClient, hashes);
+        ClientReceiver receiver = new ClientReceiver(socketChannel, hashes);
         receiver.start();
         long statStartTime = System.currentTimeMillis();
         long sentCount = 0;
 
         Random rand = new Random();
         while (true) {
-            //create random 8kb message
             byte[] message = new byte[Constants.MESSAGE_SIZE];
             rand.nextBytes(message);
             ByteBuffer buffer = ByteBuffer.wrap(message);
-            //send the message
-            datClient.write(buffer);
-            sentCount++;
-
+            socketChannel.write(buffer);
             byte[] hash = HashUtil.hash(message);
+            sentCount++;
             hashes.add(hash);
             long currentTime = System.currentTimeMillis();
             if (currentTime - statStartTime > 20000) {

@@ -1,20 +1,21 @@
 package cs455.scaling.client;
 
+import cs455.scaling.util.Constants;
+
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ClientReceiver extends Thread {
 
     public AtomicLong recCount;
-    private SocketChannel myChannel;
+    private SocketChannel socketChannel;
     private LinkedBlockingQueue<byte[]> expectedHashes;
 
-    public ClientReceiver(SocketChannel myChannel, LinkedBlockingQueue<byte[]> expectedHashes) {
-        this.myChannel = myChannel;
+    public ClientReceiver(SocketChannel socketChannel, LinkedBlockingQueue<byte[]> expectedHashes) {
+        this.socketChannel = socketChannel;
         this.expectedHashes = expectedHashes;
     }
 
@@ -26,12 +27,11 @@ public class ClientReceiver extends Thread {
         byte[] expected;
         while (true) {
             try {
-                //sha1 hashes are 160 bits long so we only need to allocate 20 bytes
-                ByteBuffer messageBuffer = ByteBuffer.allocate(20);
+                ByteBuffer messageBuffer = ByteBuffer.allocate(Constants.SHA1_DIGEST_SIZE);
 
                 int bytesRead = 0;
-                while (bytesRead != 20) {
-                    bytesRead += myChannel.read(messageBuffer);
+                while (bytesRead != Constants.SHA1_DIGEST_SIZE) {
+                    bytesRead += socketChannel.read(messageBuffer);
                 }
                 byte[] hash = messageBuffer.array();
 

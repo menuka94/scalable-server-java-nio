@@ -154,7 +154,7 @@ public class ThreadPoolManager extends Thread {
 
                 double standardDeviation = 0;
 
-                throughput = throughput / 20;
+                throughput /= 20;
                 double numClients = sentCounts.size();
                 double mean = throughput / numClients;
 
