@@ -1,5 +1,6 @@
 package cs455.scaling.datastructures;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
@@ -12,7 +13,7 @@ public class ClientData {
 
     public ClientData(SocketChannel clientSocketChannel) {
         synchronized (this) {
-            messages = new LinkedList<byte[]>();
+            messages = new LinkedList<>();
             this.clientSocketChannel = clientSocketChannel;
         }
     }
@@ -21,7 +22,7 @@ public class ClientData {
         return clientSocketChannel;
     }
 
-    public synchronized void add(byte[] message) {
+    public synchronized void addMessage(byte[] message) {
         messages.add(message);
     }
 
@@ -31,8 +32,7 @@ public class ClientData {
                 try {
                     byte[] hash = HashUtil.hash(message);
                     clientSocketChannel.write(ByteBuffer.wrap(hash));
-
-                } catch (Exception e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
 

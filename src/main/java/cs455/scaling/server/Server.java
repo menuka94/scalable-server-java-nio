@@ -15,7 +15,7 @@ import cs455.scaling.datastructures.Batch;
 public class Server {
 
     public static void main(String[] args) {
-        if (args.length < 4) {
+        if (args.length != 4) {
             System.out.println("Wrong args: port numWorkers batchSize batchTime");
             System.exit(1);
         }
@@ -24,17 +24,16 @@ public class Server {
         final int batchSize = Integer.parseInt(args[2]);
         final int batchTime = Integer.parseInt(args[3]);
 
-        System.out.println("starting server on port " + port);
-        //grab the final single instance of the taskqueue that the pool manager uses
+        System.out.println("Starting server on port " + port);
+
         LinkedBlockingQueue<Task> taskQueue = ThreadPoolManager.getTaskQueue();
         //initialize the current batch for the first time here so that we know it
         //is created before we spawn any threads
-        ThreadPoolManager.currentBatch = new Batch();
+        ThreadPoolManager.setCurrentBatch(new Batch());
 
         //start the thread pool manager and give it the batch time
         ThreadPoolManager threadPoolManager = new ThreadPoolManager(batchSize, batchTime);
-        Thread poolManagerThread = new Thread(threadPoolManager);
-        poolManagerThread.start();
+        threadPoolManager.start();
 
         //spawn as many workers as the args call for
         for (int i = 0; i < numWorkers; i++) {
@@ -57,35 +56,25 @@ public class Server {
             serverSocketChannel.configureBlocking(false);
 
             //idk why I have to do this but it makes nio work
-            //register the operations?
-            int ops = serverSocketChannel.validOps();
-            SelectionKey selectionKey = serverSocketChannel.register(selector, ops);
-
+            serverSocketChannel.register(selector, serverSocketChannel.validOps());
 
             while (true) {
-                //System.out.println("selecting");
                 //selects the keys, but doesnt give them to you yet
                 //use selectNow because it does not block unexpectedly
                 selector.selectNow();
                 //actually get the keys so that we can use them
                 Set<SelectionKey> keys = selector.selectedKeys();
                 //get an iterator from the keyset that will feed us keys
-                Iterator<SelectionKey> keyIterator = keys.iterator();
+                Iterator<SelectionKey> iterator = keys.iterator();
 
                 //go over all the keys and handle them
-                while (keyIterator.hasNext()) {
+                while (iterator.hasNext()) {
                     //System.out.println("inside iterator loop: ");
-                    SelectionKey currentKey = keyIterator.next();
-
-                    //System.out.println(currentKey.channel());
-
-                    //System.out.println(currentKey.attachment());
-                    //check if we have already processed that key
+                    SelectionKey currentKey = iterator.next();
 
                     //accept the key correctly
                     synchronized (selector) {
                         if (currentKey.isAcceptable()) {
-                            //System.out.println("Accepting");
                             //create a task to be allocated to a worker thread
                             Register acceptTask = new Register(serverSocketChannel, selector);
                             //add task to some sort of task queue
@@ -96,19 +85,17 @@ public class Server {
                         else if (currentKey.isReadable()) {
                             //mark the key as in the queue, and should not be added again
                             if (currentKey.attachment() == null) {
-                                //System.out.println("reading: ");
                                 //create a task for receiving the messages
-                                RecieveIncomingMessages recTask = new RecieveIncomingMessages(currentKey);
+                                ReceiveIncomingMessages recTask = new ReceiveIncomingMessages(currentKey);
                                 //add to the task queue
                                 taskQueue.add(recTask);
                             }
                         }
                     }
                     //attach an object to the key so the server know it has already seen it
-
                     //whatever happens make sure we take the key out of the set so we
                     //can move on to the next one
-                    keyIterator.remove();
+                    iterator.remove();
                 }
             }
         } catch (IOException e) {
