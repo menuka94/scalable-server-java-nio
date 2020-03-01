@@ -1,116 +1,117 @@
 package cs455.scaling.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Iterator;
 import java.util.Set;
-import cs455.scaling.ThreadPoolManager;
-import cs455.scaling.task.ReadAndRespond;
-import cs455.scaling.task.Register;
-import cs455.scaling.util.Batch;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import cs455.scaling.datastructures.Batch;
+import cs455.scaling.datastructures.TaskQueue;
 
-/**
- * There is exactly one server node in the system.
- * The server node provides the following functions:
- * A. Accepts incoming network connections from the clients.
- * B. Accepts incoming traffic from these connections
- * C. Groups data from the clients together into batches
- * D. Replies to clients by sending back a hash code for each message received.
- * E. The server performs functions A, B, C, and D by relying on the thread pool.
- */
 public class Server {
-    private static final Logger log = LogManager.getLogger(Server.class);
-    private static ThreadPoolManager threadPoolManager;
-    private static Batch batch;
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-        if (args.length != 4) {
-            log.warn("Invalid arguments. Provide <port-num> <thread-pool-size> " +
-                    "<batch-size> <batch-time>");
+    public static void main(String[] args) {
+        if (args.length < 4) {
+            System.out.println("Wrong args: Server port numWorkers batchSize batchTime");
             System.exit(1);
         }
+        int port = Integer.parseInt(args[0]);
 
-        int portNum = 0;
-        int threadPoolSize = 0;
-        int batchSize = 0;
-        int batchTime = 0;
+        System.out.println("starting server on port " + port);
+        //grab the final single instance of the taskqueue that the pool manager uses
+        TaskQueue taskQueue = ThreadPoolManager.taskQueue;
+        //initialize the current batch for the first time here so that we know it
+        //is created before we spawn any threads
+        ThreadPoolManager.currentBatch = new Batch();
+
+        //start the thread pool manager and give it the batch time
+        ThreadPoolManager threadPoolManager = new ThreadPoolManager(Integer.parseInt(args[2]),
+                Integer.parseInt(args[3]));
+        Thread poolManagerThread = new Thread(threadPoolManager);
+        poolManagerThread.start();
+
+        //spawn as many workers as the args call for
+        int numWorkers = Integer.parseInt(args[1]);
+        for (int i = 0; i < numWorkers; i++) {
+            WorkerThread w = new WorkerThread();
+            Thread thread = new Thread(w);
+            thread.start();
+        }
 
         try {
-            portNum = Integer.parseInt(args[0]);
-            threadPoolSize = Integer.parseInt(args[1]);
-            batchSize = Integer.parseInt(args[2]);
-            batchTime = Integer.parseInt(args[3]);
-        } catch (NumberFormatException e) {
-            log.error(e.getStackTrace());
-            log.info("Invalid arguments. Exiting ...");
-            System.exit(1);
-        }
+            //open selector
+            Selector selector = Selector.open();
 
-        threadPoolManager = new ThreadPoolManager(threadPoolSize, batchSize, batchTime);
-        threadPoolManager.start();
-        threadPoolManager.startWorkers();
+            //open server socket on the port we specified
+            ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+            String hostname = InetAddress.getLocalHost().getHostName();
+            InetSocketAddress address = new InetSocketAddress(hostname, port);
 
-        // Open the selector
-        Selector selector = Selector.open();
+            serverSocketChannel.bind(address);
 
-        // Create input channel
-        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(new InetSocketAddress("localhost", portNum));
+            //make sure that we are doing non blocking io
+            serverSocketChannel.configureBlocking(false);
 
-        // Register channel to the selector
-        serverSocketChannel.configureBlocking(false);
-        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+            //idk why I have to do this but it makes nio work
+            //register the operations?
+            int ops = serverSocketChannel.validOps();
+            SelectionKey selectionKey = serverSocketChannel.register(selector, ops);
 
-        // Loop on selector
-        while (true) {
-            log.info("Listening for new connections or messages");
 
-            // block until one or more channels have activity
-            selector.select();
-//            log.info("\tActivity on selector!");
+            while (true) {
+                //System.out.println("selecting");
+                //selects the keys, but doesnt give them to you yet
+                //use selectNow because it does not block unexpectedly
+                selector.selectNow();
+                //actually get the keys so that we can use them
+                Set<SelectionKey> keys = selector.selectedKeys();
+                //get an iterator from the keyset that will feed us keys
+                Iterator<SelectionKey> keyIterator = keys.iterator();
 
-            // get keys that have activity
-            Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                //go over all the keys and handle them
+                while (keyIterator.hasNext()) {
+                    //System.out.println("inside iterator loop: ");
+                    SelectionKey currentKey = keyIterator.next();
 
-            // loop over keys
-            Iterator<SelectionKey> iterator = selectedKeys.iterator();
-            while (iterator.hasNext()) {
-                SelectionKey key = iterator.next();
+                    //System.out.println(currentKey.channel());
 
-                if (!key.isValid()) {
-                    continue;
+                    //System.out.println(currentKey.attachment());
+                    //check if we have already processed that key
+
+                    //accept the key correctly
+                    synchronized (selector) {
+                        if (currentKey.isAcceptable()) {
+                            //System.out.println("Accepting");
+                            //create a task to be allocated to a worker thread
+                            AcceptConnection acceptTask = new AcceptConnection(serverSocketChannel, selector);
+                            //add task to some sort of task queue
+                            taskQueue.add(acceptTask);
+                        }
+
+                        //read the key if it needs to be read
+                        else if (currentKey.isReadable()) {
+                            //mark the key as in the queue, and should not be added again
+                            if (currentKey.attachment() == null) {
+                                //System.out.println("reading: ");
+                                //create a task for receiving the messages
+                                RecieveIncomingMessages recTask = new RecieveIncomingMessages(currentKey);
+                                //add to the task queue
+                                taskQueue.add(recTask);
+                            }
+                        }
+                    }
+                    //attach an object to the key so the server know it has already seen it
+
+                    //whatever happens make sure we take the key out of the set so we
+                    //can move on to the next one
+                    keyIterator.remove();
                 }
-
-                key.interestOps(key.interestOps() & ~key.readyOps());
-
-                // New connection on serverSocketChannel
-                if (key.isAcceptable()) {
-                    log.info("\tRegister");
-                    Register register = new Register(selector, serverSocketChannel);
-                    threadPoolManager.addTask(register);
-
-                    // remove from selectedKeys so we can move to the next
-                    selector.selectedKeys().remove(key);
-
-                    // re-register with selector to receive more connections
-                    serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-                }
-
-                // Previous connection has data to read
-                if (key.isReadable()) {
-                    // TODO: add to a pool and deregister the read interest
-                    // that way, the loop will not be spinning over and over again
-                    log.info("\tReadAndRespond");
-                    ReadAndRespond readAndRespond = new ReadAndRespond(key);
-                    threadPoolManager.addTask(readAndRespond);
-                }
-//                iterator.remove();
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
