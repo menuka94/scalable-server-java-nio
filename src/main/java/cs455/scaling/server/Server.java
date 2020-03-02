@@ -65,6 +65,7 @@ public class Server {
         // Register channel to the selector
         serverSocketChannel.configureBlocking(false);
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        // serverSocketChannel.register(selector, serverSocketChannel.validOps());
 
         // Loop on selector
         while (true) {
@@ -72,7 +73,7 @@ public class Server {
 
             // block until one or more channels have activity
             selector.select();
-//            log.info("\tActivity on selector!");
+           log.info("\tActivity on selector!");
 
             // get keys that have activity
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -83,15 +84,16 @@ public class Server {
                 SelectionKey key = iterator.next();
 
                 if (!key.isValid()) {
+                    log.warn("Invalid key");
                     continue;
                 }
-
-                // key.interestOps(key.interestOps() & ~key.readyOps());
 
                 // New connection on serverSocketChannel
                 if (key.isAcceptable()) {
                     log.info("\tRegister");
-                    Register register = new Register(selector, serverSocketChannel);
+                    // serverSocketChannel.register(selector, key.interestOps() & ~SelectionKey.OP_ACCEPT);
+                    // selector.wakeup();
+                    Register register = new Register(selector, serverSocketChannel, key);
                     // threadPoolManager.addTask(register);
                     register.execute();
                 }
@@ -102,8 +104,7 @@ public class Server {
                     // that way, the loop will not be spinning over and over again
                     log.info("\tReadAndRespond");
                     ReadAndRespond readAndRespond = new ReadAndRespond(key);
-                    // threadPoolManager.addTask(readAndRespond);
-                    readAndRespond.execute();
+                    threadPoolManager.addTask(readAndRespond);
                 }
                 iterator.remove();
             }

@@ -12,20 +12,23 @@ public class Register implements Task {
     private static final Logger log = LogManager.getLogger(Register.class);
     private Selector selector;
     private ServerSocketChannel serverSocketChannel;
+    private SelectionKey key;
 
-    public Register(Selector selector, ServerSocketChannel serverSocketChannel) {
+    public Register(Selector selector, ServerSocketChannel serverSocketChannel, SelectionKey key) {
         this.selector = selector;
         this.serverSocketChannel = serverSocketChannel;
+        this.key = key;
     }
 
     @Override
     public void execute() throws IOException {
         log.info("Register.execute()");
         // Grab the incoming socket from the serverSocketChannel
-        SocketChannel client = serverSocketChannel.accept();
+        SocketChannel clientSocketChannel = serverSocketChannel.accept();
         // Configure it to be a new channel and key that our selector should monitor
-        client.configureBlocking(false);
-        client.register(selector, SelectionKey.OP_READ);
+        clientSocketChannel.configureBlocking(false);
+        clientSocketChannel.register(selector, SelectionKey.OP_READ);
+        clientSocketChannel.register(selector, key.interestOps() & ~SelectionKey.OP_ACCEPT);
         log.info("\t\tNew Client Registered");
     }
 }

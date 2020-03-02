@@ -49,8 +49,10 @@ public class ThreadPoolManager extends Thread {
     public synchronized void addTask(Task task) {
         log.info("currentBatch.getCurrentSize: " + currentBatch.getCurrentSize());
         if (currentBatch.getCurrentSize() < batchSize) {
+            log.info("Adding new task to batch");
             currentBatch.addTask(task);
         } else {
+            log.info("Batch is full. Creating a new batch");
             batchQueue.add(currentBatch);
             currentBatch = new Batch();
             currentBatch.addTask(task);
