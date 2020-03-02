@@ -43,5 +43,6 @@ public class ReadAndRespond implements Task {
             // Clear the buffer
             buffer.clear();
         }
+        key.attach(null);
     }
 }

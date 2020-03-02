@@ -69,11 +69,11 @@ public class Server {
 
         // Loop on selector
         while (true) {
-            log.info("Listening for new connections or messages");
+            // log.info("Listening for new connections or messages");
 
             // block until one or more channels have activity
             selector.select();
-           log.info("\tActivity on selector!");
+           // log.info("\tActivity on selector!");
 
             // get keys that have activity
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -90,21 +90,29 @@ public class Server {
 
                 // New connection on serverSocketChannel
                 if (key.isAcceptable()) {
-                    log.info("\tRegister");
-                    // serverSocketChannel.register(selector, key.interestOps() & ~SelectionKey.OP_ACCEPT);
-                    // selector.wakeup();
-                    Register register = new Register(selector, serverSocketChannel, key);
-                    // threadPoolManager.addTask(register);
-                    register.execute();
+                    if (key.attachment() == null) {
+                        log.info("\tRegister");
+                        // selector.wakeup();
+                        key.attach(42); // attach random, not-null object
+                        Register register = new Register(selector, serverSocketChannel, key);
+                        register.execute(); // need to do the registration at once without adding to the queue
+                    } else {
+                        log.info("\tAlready registered");
+                    }
                 }
 
                 // Previous connection has data to read
                 if (key.isReadable()) {
+                    if (key.attachment() == null) {
+                        key.attach(43);
+                        log.info("\tReadAndRespond");
+                        ReadAndRespond readAndRespond = new ReadAndRespond(key);
+                        threadPoolManager.addTask(readAndRespond);
+                    } else {
+                        // log.info("\tAlreadyReadAndResponded");
+                    }
                     // TODO: add to a pool and deregister the read interest
                     // that way, the loop will not be spinning over and over again
-                    log.info("\tReadAndRespond");
-                    ReadAndRespond readAndRespond = new ReadAndRespond(key);
-                    threadPoolManager.addTask(readAndRespond);
                 }
                 iterator.remove();
             }
