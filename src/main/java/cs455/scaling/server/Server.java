@@ -86,19 +86,14 @@ public class Server {
                     continue;
                 }
 
-                key.interestOps(key.interestOps() & ~key.readyOps());
+                // key.interestOps(key.interestOps() & ~key.readyOps());
 
                 // New connection on serverSocketChannel
                 if (key.isAcceptable()) {
                     log.info("\tRegister");
                     Register register = new Register(selector, serverSocketChannel);
-                    threadPoolManager.addTask(register);
-
-                    // remove from selectedKeys so we can move to the next
-                    selector.selectedKeys().remove(key);
-
-                    // re-register with selector to receive more connections
-                    serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+                    // threadPoolManager.addTask(register);
+                    register.execute();
                 }
 
                 // Previous connection has data to read
@@ -107,9 +102,10 @@ public class Server {
                     // that way, the loop will not be spinning over and over again
                     log.info("\tReadAndRespond");
                     ReadAndRespond readAndRespond = new ReadAndRespond(key);
-                    threadPoolManager.addTask(readAndRespond);
+                    // threadPoolManager.addTask(readAndRespond);
+                    readAndRespond.execute();
                 }
-//                iterator.remove();
+                iterator.remove();
             }
         }
     }

@@ -29,8 +29,9 @@ public class ReadAndRespond implements Task {
 
         // Handle a closed connection
         if (bytesRead == -1) {
-            clientSocket.close();
-            log.info("\t\tClient disconnected.");
+             clientSocket.close();
+            // log.info("\t\tClient disconnected.");
+            log.warn("bytesRead is -1");
         } else {
             // Return the hash of message back to the client
             log.info("\t\tReceived: " + new String(buffer.array()));
