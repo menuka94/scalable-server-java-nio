@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.concurrent.LinkedBlockingQueue;
+import cs455.scaling.task.Register;
 import cs455.scaling.task.Task;
 import cs455.scaling.util.Batch;
 import org.apache.logging.log4j.LogManager;
@@ -22,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 public class ThreadPoolManager extends Thread {
     private static final Logger log = LogManager.getLogger(ThreadPoolManager.class);
     private volatile LinkedBlockingQueue<Batch> batchQueue;
+    private volatile LinkedBlockingQueue<Register> registerTaskQueue;
     private Batch currentBatch;
     private volatile Vector<Worker> workers;
     private final int threadPoolSize;
@@ -33,6 +35,7 @@ public class ThreadPoolManager extends Thread {
         this.batchSize = batchSize;
         this.batchTime = batchTime;
         batchQueue = new LinkedBlockingQueue<>();
+        registerTaskQueue = new LinkedBlockingQueue<>();
         currentBatch = new Batch();
         workers = new Vector<>();
         for (int i = 0; i < threadPoolSize; i++) {
@@ -62,13 +65,14 @@ public class ThreadPoolManager extends Thread {
     public synchronized void addTask(Task task) {
         if (currentBatch.getSize() < batchSize - 1) {
             log.info("Adding new task to batch");
-            currentBatch.addTask(task);
         } else {
             log.info("Batch is full. Creating a new batch");
+            // TODO: Properly pause ThreadPoolManager while creating a new batch
+            this.interrupt();
             batchQueue.add(currentBatch);
             currentBatch = new Batch();
-            currentBatch.addTask(task);
         }
+        currentBatch.addTask(task);
         log.info("currentBatch.getCurrentSize: " + currentBatch.getSize());
     }
 

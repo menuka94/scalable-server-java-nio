@@ -93,10 +93,9 @@ public class Server {
                 if (key.isAcceptable()) {
                     if (key.attachment() == null) {
                         log.info("\tRegister");
-                        // selector.wakeup();
                         key.attach(42); // attach random, non-null object
                         Register register = new Register(selector, serverSocketChannel, key);
-                        register.execute(); // need to do the registration at once without adding to the queue
+                        threadPoolManager.addTask(register);
                     } else {
                         log.debug("\tAlready registered");
                     }
