@@ -47,8 +47,7 @@ public class ThreadPoolManager extends Thread {
     }
 
     public synchronized void addTask(Task task) {
-        log.info("currentBatch.getCurrentSize: " + currentBatch.getCurrentSize());
-        if (currentBatch.getCurrentSize() < batchSize) {
+        if (currentBatch.getCurrentSize() < batchSize - 1) {
             log.info("Adding new task to batch");
             currentBatch.addTask(task);
         } else {
@@ -57,6 +56,7 @@ public class ThreadPoolManager extends Thread {
             currentBatch = new Batch();
             currentBatch.addTask(task);
         }
+        log.info("currentBatch.getCurrentSize: " + currentBatch.getCurrentSize());
     }
 
     public void startWorkers() {

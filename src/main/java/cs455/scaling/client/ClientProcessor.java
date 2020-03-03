@@ -16,17 +16,17 @@ public class ClientProcessor extends Thread {
         receivedHashes = new LinkedBlockingQueue<>();
     }
 
-    public void addReceivedHash (String receivedHash) {
+    public void addReceivedHash(String receivedHash) {
         receivedHashes.add(receivedHash);
     }
 
     @Override
     public void run() {
         log.info("Starting ClientProcessor");
-        while(true) {
+        while (true) {
             try {
                 String receivedHash = receivedHashes.take();
-                if(hashes.contains(receivedHash)) {
+                if (hashes.contains(receivedHash)) {
                     log.info("Hash matched. Removing it...");
                     hashes.remove(receivedHash);
                 } else {

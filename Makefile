@@ -15,4 +15,4 @@ run-server:
 	cd build/classes/java/main && java -cp $(jarfile) cs455.scaling.server.Server 5600 10 5 10
 
 run-client:
-	cd build/classes/java/main && java -cp $(jarfile) cs455.scaling.client.Client localhost 5600 2000
+	cd build/classes/java/main && java -cp $(jarfile) cs455.scaling.client.Client localhost 5600 4

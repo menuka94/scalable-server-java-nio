@@ -90,14 +90,14 @@ public class Client {
             // prepare to message to send
             byteBuffer = ByteBuffer.wrap(message);
             socketChannel.write(byteBuffer);
-            log.info("Messages Sent: " + messagesSent.get());
+            // log.info("Messages Sent: " + messagesSent.get());
 
             byteBuffer.clear();
             socketChannel.read(byteBuffer);
             String response = new String(byteBuffer.array()).trim();
             log.debug("Server responded with: " + response);
             messagesReceived.getAndIncrement();
-            log.info("Messages Received: " + messagesReceived.get());
+            // log.info("Messages Received: " + messagesReceived.get());
 
             String hashedMessage = HashUtil.SHA1FromBytes(message);
             hashes.put(hashedMessage);
