@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.concurrent.LinkedBlockingQueue;
+
 import cs455.scaling.task.Task;
 import cs455.scaling.util.Batch;
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +37,7 @@ public class ThreadPoolManager extends Thread {
         currentBatch = new Batch();
         workers = new Vector<>();
         for (int i = 0; i < threadPoolSize; i++) {
-            workers.add(new Worker("Worker " + (i+1)));
+            workers.add(new Worker("Worker " + (i + 1)));
         }
     }
 
@@ -79,15 +80,15 @@ public class ThreadPoolManager extends Thread {
                 Batch batch = null;
                 try {
                     batch = batchQueue.take();
-                    log.info("Worker taking one batch to process");
+                    log.debug("Worker taking one batch to process");
                     Vector<Task> tasks = batch.getTasks();
                     Iterator<Task> iterator = tasks.iterator();
                     log.info("tasks.size(): " + tasks.size());
                     int i = 0;
                     while (iterator.hasNext()) {
-                        log.info("Executing task " + ++i);
+                        log.debug("Executing task " + ++i);
                         Task task = iterator.next();
-                        if(task == null) {
+                        if (task == null) {
                             log.warn("Task is null");
                         } else {
                             task.execute();

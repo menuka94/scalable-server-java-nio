@@ -94,7 +94,7 @@ public class Server {
                     if (key.attachment() == null) {
                         log.info("\tRegister");
                         // selector.wakeup();
-                        key.attach(42); // attach random, not-null object
+                        key.attach(42); // attach random, non-null object
                         Register register = new Register(selector, serverSocketChannel, key);
                         register.execute(); // need to do the registration at once without adding to the queue
                     } else {
@@ -105,7 +105,7 @@ public class Server {
                 // Previous connection has data to read
                 if (key.isReadable()) {
                     if (key.attachment() == null) {
-                        key.attach(43); // attach random, not-null object
+                        key.attach(43); // attach random, non-null object
                         log.debug("\tReadAndRespond");
                         ReadAndRespond readAndRespond = new ReadAndRespond(key);
                         threadPoolManager.addTask(readAndRespond);
