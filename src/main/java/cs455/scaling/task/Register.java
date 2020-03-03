@@ -28,7 +28,6 @@ public class Register implements Task {
         // Configure it to be a new channel and key that our selector should monitor
         clientSocketChannel.configureBlocking(false);
         clientSocketChannel.register(selector, SelectionKey.OP_READ);
-        // clientSocketChannel.register(selector, key.interestOps() & ~SelectionKey.OP_ACCEPT);
         key.attach(null);
         log.info("\t\tNew Client Registered");
     }

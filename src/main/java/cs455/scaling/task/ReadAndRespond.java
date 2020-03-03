@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+
+import cs455.scaling.util.HashUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,7 +36,12 @@ public class ReadAndRespond implements Task {
             log.warn("bytesRead is -1");
         } else {
             // Return the hash of message back to the client
-            log.info("\t\tReceived: " + new String(buffer.array()));
+            log.debug("\t\tReceived: " + new String(buffer.array()));
+
+            String digest = HashUtil.SHA1FromBytes(buffer.array());
+
+            buffer.clear();
+            buffer.put(digest.getBytes());
 
             // Flip the buffer now write
             buffer.flip();

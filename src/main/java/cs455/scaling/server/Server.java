@@ -7,6 +7,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Iterator;
 import java.util.Set;
+
 import cs455.scaling.ThreadPoolManager;
 import cs455.scaling.task.ReadAndRespond;
 import cs455.scaling.task.Register;
@@ -69,11 +70,11 @@ public class Server {
 
         // Loop on selector
         while (true) {
-            // log.info("Listening for new connections or messages");
+            log.debug("Listening for new connections or messages");
 
             // block until one or more channels have activity
             selector.select();
-           // log.info("\tActivity on selector!");
+            log.debug("\tActivity on selector!");
 
             // get keys that have activity
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -97,22 +98,20 @@ public class Server {
                         Register register = new Register(selector, serverSocketChannel, key);
                         register.execute(); // need to do the registration at once without adding to the queue
                     } else {
-                        log.info("\tAlready registered");
+                        log.debug("\tAlready registered");
                     }
                 }
 
                 // Previous connection has data to read
                 if (key.isReadable()) {
                     if (key.attachment() == null) {
-                        key.attach(43);
-                        log.info("\tReadAndRespond");
+                        key.attach(43); // attach random, not-null object
+                        log.debug("\tReadAndRespond");
                         ReadAndRespond readAndRespond = new ReadAndRespond(key);
                         threadPoolManager.addTask(readAndRespond);
                     } else {
-                        // log.info("\tAlreadyReadAndResponded");
+                        log.debug("\tAlreadyReadAndResponded");
                     }
-                    // TODO: add to a pool and deregister the read interest
-                    // that way, the loop will not be spinning over and over again
                 }
                 iterator.remove();
             }
