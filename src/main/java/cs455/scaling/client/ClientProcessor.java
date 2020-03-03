@@ -12,18 +12,18 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ClientProcessor extends Thread {
     private static final Logger log = LogManager.getLogger(ClientProcessor.class);
 
-    public AtomicLong messagesReceived;
+    public AtomicLong noOfMessagesReceived;
     private SocketChannel socketChannel;
-    private LinkedBlockingQueue<String> hashes;
+    private LinkedBlockingQueue<String> messagesSent;
 
-    public ClientProcessor(SocketChannel socketChannel, LinkedBlockingQueue<String> hashes) {
+    public ClientProcessor(SocketChannel socketChannel, LinkedBlockingQueue<String> messagesSent) {
         this.socketChannel = socketChannel;
-        this.hashes = hashes;
+        this.messagesSent = messagesSent;
     }
 
     @Override
     public void run() {
-        messagesReceived = new AtomicLong(0);
+        noOfMessagesReceived = new AtomicLong(0);
         log.info("Starting ClientProcessor");
 
         while (true) {
@@ -33,13 +33,13 @@ public class ClientProcessor extends Thread {
                 String response = new String(byteBuffer.array());
 
                 log.info("Response: " + response);
-                if (hashes.contains(response)) {
-                    hashes.remove(response);
-                    log.info("Hash matched. Removing ...");
+                if (messagesSent.contains(response)) {
+                    messagesSent.remove(response);
+                    // log.info("Hash matched. Removing ...");
                 } else {
-                    log.warn("Hash not found in sent messages");
+                    // log.warn("Hash not found in sent messages");
                 }
-                messagesReceived.getAndIncrement();
+                noOfMessagesReceived.getAndIncrement();
             } catch (Exception e) {
                 e.printStackTrace();
             }

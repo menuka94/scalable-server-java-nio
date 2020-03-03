@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import cs455.scaling.task.Task;
 import cs455.scaling.util.Batch;
 import org.apache.logging.log4j.LogManager;
@@ -43,12 +42,25 @@ public class ThreadPoolManager extends Thread {
 
     @Override
     public void run() {
-        Long batchStart = System.currentTimeMillis();
+        long batchStartTime = System.currentTimeMillis();
 
+        long currentTime;
+        while (true) {
+            currentTime = System.currentTimeMillis();
+            synchronized (this) {
+                if (currentTime - batchStartTime > batchTime && currentBatch.getSize() > 0) {
+                    log.info("Batch time (" + batchTime + ") exceeded.");
+                    // process tasks currently in the batch
+                    log.info("No. of tasks in the current batch: " + currentBatch.getSize());
+                    batchQueue.add(currentBatch);
+                    currentBatch = new Batch();
+                }
+            }
+        }
     }
 
     public synchronized void addTask(Task task) {
-        if (currentBatch.getCurrentSize() < batchSize - 1) {
+        if (currentBatch.getSize() < batchSize - 1) {
             log.info("Adding new task to batch");
             currentBatch.addTask(task);
         } else {
@@ -57,7 +69,7 @@ public class ThreadPoolManager extends Thread {
             currentBatch = new Batch();
             currentBatch.addTask(task);
         }
-        log.info("currentBatch.getCurrentSize: " + currentBatch.getCurrentSize());
+        log.info("currentBatch.getCurrentSize: " + currentBatch.getSize());
     }
 
     public void startWorkers() {

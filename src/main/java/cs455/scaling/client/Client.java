@@ -70,7 +70,7 @@ public class Client {
 
         Random random = new Random();
         ByteBuffer byteBuffer = ByteBuffer.allocate(Constants.MESSAGE_SIZE);
-        // while (true) {
+        while (true) {
             // an 8KB message
             byte[] message = new byte[Constants.MESSAGE_SIZE];
             random.nextBytes(message);
@@ -86,6 +86,6 @@ public class Client {
 
             messagesSent.getAndIncrement();
             Thread.sleep(sleepTime);
-        // }
+        }
     }
 }

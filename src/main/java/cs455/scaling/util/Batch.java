@@ -23,7 +23,7 @@ public class Batch {
         return tasks;
     }
 
-    public int getCurrentSize() {
+    public int getSize() {
         return tasks.size();
     }
 }
