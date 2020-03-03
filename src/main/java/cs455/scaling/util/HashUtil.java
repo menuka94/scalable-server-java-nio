@@ -13,14 +13,14 @@ public class HashUtil {
 
     public static void main(String[] args) {
         Random random = new Random();
-        byte[] bytes = new byte[8192];
+        byte[] bytes = new byte[Constants.MESSAGE_SIZE];
         random.nextBytes(bytes);
 
         String sent = new String(bytes);
-        String received = SHA1FromBytes(bytes);
+        String received = SHA1FromBytes(sent.getBytes());
 
-        System.out.println("Sent: " + SHA1FromBytes(sent.getBytes()));
-        System.out.println("Received: " + received);
+        String sentString = SHA1FromBytes(sent.getBytes());
+        System.out.println(received.equals(sentString) ? "Equal" : "Not equal");
     }
 
     public static String SHA1FromBytes(byte[] data) {

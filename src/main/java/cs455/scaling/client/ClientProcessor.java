@@ -30,7 +30,7 @@ public class ClientProcessor extends Thread {
             try {
                 ByteBuffer byteBuffer = ByteBuffer.allocate(Constants.SHA1_DIGEST_SIZE);
                 socketChannel.read(byteBuffer);
-                String response = new String(byteBuffer.array()).trim();
+                String response = new String(byteBuffer.array());
 
                 log.info("Response: " + response);
                 if (hashes.contains(response)) {

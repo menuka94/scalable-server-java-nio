@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
+import cs455.scaling.util.Constants;
 import cs455.scaling.util.HashUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,7 +22,7 @@ public class ReadAndRespond implements Task {
     public void execute() throws IOException {
         log.info("ReadAndRespond.execute()");
         // Create a buffer to read into
-        ByteBuffer buffer = ByteBuffer.allocate(256);
+        ByteBuffer buffer = ByteBuffer.allocate(Constants.MESSAGE_SIZE);
 
         // Grab the socket from the key
         SocketChannel clientSocket = (SocketChannel) key.channel();

@@ -80,11 +80,6 @@ public class Client {
             socketChannel.write(byteBuffer);
             // log.info("Messages Sent: " + messagesSent.get());
 
-            // byteBuffer.clear();
-            // socketChannel.read(byteBuffer);
-            // String response = new String(byteBuffer.array()).trim();
-            // log.debug("Server responded with: " + response);
-
             String hashedMessage = HashUtil.SHA1FromBytes(message);
             log.info("Sent: " + hashedMessage);
             hashes.put(hashedMessage);
