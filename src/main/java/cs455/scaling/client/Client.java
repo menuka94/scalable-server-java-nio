@@ -31,7 +31,7 @@ public class Client {
 
     private static SocketChannel socketChannel;
     // private static ByteBuffer buffer;
-    private static AtomicLong messagesSent;
+    private static AtomicLong noOfMessagesSent;
     private static LinkedBlockingQueue<String> hashes;
 
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException,
@@ -60,7 +60,7 @@ public class Client {
 
         long sleepTime = 1000 / messageRate;
 
-        messagesSent = new AtomicLong();
+        noOfMessagesSent = new AtomicLong();
 
         // Connect to the server
         socketChannel = SocketChannel.open(new InetSocketAddress(serverHost, serverPort));
@@ -84,8 +84,16 @@ public class Client {
             log.info("Sent: " + hashedMessage);
             hashes.put(hashedMessage);
 
-            messagesSent.getAndIncrement();
+            noOfMessagesSent.getAndIncrement();
             Thread.sleep(sleepTime);
         }
+    }
+
+    public static long getNoOfSentMessages() {
+        return noOfMessagesSent.get();
+    }
+
+    public static void resetNoOfMessagesSent() {
+        noOfMessagesSent.set(0);
     }
 }

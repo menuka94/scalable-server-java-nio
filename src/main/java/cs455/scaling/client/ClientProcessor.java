@@ -35,9 +35,9 @@ public class ClientProcessor extends Thread {
                 log.info("Response: " + response);
                 if (messagesSent.contains(response)) {
                     messagesSent.remove(response);
-                    // log.info("Hash matched. Removing ...");
+                    log.info("Hash matched. Removing ...");
                 } else {
-                    // log.warn("Hash not found in sent messages");
+                    log.warn("Hash not found in sent messages");
                 }
                 noOfMessagesReceived.getAndIncrement();
             } catch (Exception e) {
