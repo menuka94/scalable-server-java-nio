@@ -93,7 +93,7 @@ public class ThreadPoolManager extends Thread {
                 try {
                     batch = batchQueue.take();
                     log.debug("Worker taking one batch to process");
-                    Vector<Task> tasks = batch.getTasks();
+                    LinkedBlockingQueue<Task> tasks = batch.getTasks();
                     Iterator<Task> iterator = tasks.iterator();
                     log.info("tasks.size(): " + tasks.size());
                     int i = 0;
