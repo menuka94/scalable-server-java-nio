@@ -20,7 +20,7 @@ public class ReadAndRespond implements Task {
 
     @Override
     public void execute() throws IOException {
-        log.info("ReadAndRespond.execute()");
+        log.debug("ReadAndRespond.execute()");
         // Create a buffer to read into
         ByteBuffer buffer = ByteBuffer.allocate(Constants.MESSAGE_SIZE);
 

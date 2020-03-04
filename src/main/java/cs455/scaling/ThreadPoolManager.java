@@ -51,9 +51,9 @@ public class ThreadPoolManager extends Thread {
             currentTime = System.currentTimeMillis();
             synchronized (this) {
                 if (currentTime - batchStartTime > batchTime && currentBatch.getSize() > 0) {
-                    log.info("Batch time (" + batchTime + ") exceeded.");
-                    // process tasks currently in the batch
-                    log.info("No. of tasks in the current batch: " + currentBatch.getSize());
+                    log.debug("Batch time (" + batchTime + ") exceeded.");
+                    log.debug("No. of tasks in the current batch: " + currentBatch.getSize());
+                    // process tasks in the current batch
                     batchQueue.add(currentBatch);
                     currentBatch = new Batch();
                 }
@@ -63,16 +63,16 @@ public class ThreadPoolManager extends Thread {
 
     public synchronized void addTask(Task task) {
         if (currentBatch.getSize() < batchSize - 1) {
-            log.info("Adding new task to batch");
+            log.debug("Adding new task to batch");
         } else {
-            log.info("Batch is full. Creating a new batch");
+            log.debug("Batch is full. Creating a new batch");
             // TODO: Properly pause ThreadPoolManager while creating a new batch
             // this.interrupt();
             batchQueue.add(currentBatch);
             currentBatch = new Batch();
         }
         currentBatch.addTask(task);
-        log.info("currentBatch.getCurrentSize: " + currentBatch.getSize());
+        log.debug("currentBatch.getCurrentSize: " + currentBatch.getSize());
     }
 
     public void startWorkers() {
@@ -98,7 +98,7 @@ public class ThreadPoolManager extends Thread {
                     log.debug("Worker taking one batch to process");
                     LinkedBlockingQueue<Task> tasks = batch.getTasks();
                     Iterator<Task> iterator = tasks.iterator();
-                    log.info("tasks.size(): " + tasks.size());
+                    log.debug("tasks.size(): " + tasks.size());
                     int i = 0;
                     while (iterator.hasNext()) {
                         log.debug("Executing task " + ++i);

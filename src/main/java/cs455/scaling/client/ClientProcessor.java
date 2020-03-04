@@ -25,6 +25,8 @@ public class ClientProcessor extends Thread {
     public void run() {
         noOfMessagesReceived = new AtomicLong(0);
         log.info("Starting ClientProcessor");
+        int matched = 0;
+        int mismatched = 0;
 
         while (true) {
             try {
@@ -35,9 +37,11 @@ public class ClientProcessor extends Thread {
                 log.info("Response: " + response);
                 if (messagesSent.contains(response)) {
                     messagesSent.remove(response);
-                    log.info("Hash matched. Removing ...");
+                    // log.info("Hash matched. Removing ...");
+                    matched++;
                 } else {
                     log.warn("Hash not found in sent messages");
+                    mismatched++;
                 }
                 noOfMessagesReceived.getAndIncrement();
             } catch (Exception e) {
@@ -49,6 +53,9 @@ public class ClientProcessor extends Thread {
                 log.error("Error in ClientProcessor");
                 e.printStackTrace();
             }
+
+            log.info("Matched: " + matched);
+            log.info("Mismatched: " + mismatched);
         }
     }
 }

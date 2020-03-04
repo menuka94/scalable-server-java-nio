@@ -8,7 +8,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
-
 import cs455.scaling.util.Constants;
 import cs455.scaling.util.HashUtil;
 import org.apache.logging.log4j.LogManager;
@@ -81,10 +80,14 @@ public class Client {
             // log.info("Messages Sent: " + messagesSent.get());
 
             String hashedMessage = HashUtil.SHA1FromBytes(message);
-            log.info("Sent: " + hashedMessage);
+            // log.info("Sent: " + hashedMessage);
             hashes.put(hashedMessage);
 
             noOfMessagesSent.getAndIncrement();
+            if (noOfMessagesSent.get() % 100 == 0) {
+                log.info("No. of Messages Sent:" + noOfMessagesSent.get());
+            }
+
             Thread.sleep(sleepTime);
         }
     }
