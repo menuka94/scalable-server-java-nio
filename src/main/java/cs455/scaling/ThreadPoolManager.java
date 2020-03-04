@@ -35,7 +35,6 @@ public class ThreadPoolManager extends Thread {
         this.batchSize = batchSize;
         this.batchTime = batchTime;
         batchQueue = new LinkedBlockingQueue<>();
-        registerTaskQueue = new LinkedBlockingQueue<>();
         currentBatch = new Batch();
         workers = new Vector<>();
         for (int i = 0; i < threadPoolSize; i++) {
@@ -68,7 +67,7 @@ public class ThreadPoolManager extends Thread {
         } else {
             log.info("Batch is full. Creating a new batch");
             // TODO: Properly pause ThreadPoolManager while creating a new batch
-            this.interrupt();
+            // this.interrupt();
             batchQueue.add(currentBatch);
             currentBatch = new Batch();
         }
