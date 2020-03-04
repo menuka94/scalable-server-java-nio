@@ -3,6 +3,8 @@ package cs455.scaling.client;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
@@ -29,13 +31,12 @@ public class Client {
     private static final Logger log = LogManager.getLogger(Client.class);
 
     private static SocketChannel socketChannel;
-    // private static ByteBuffer buffer;
     private static AtomicLong noOfMessagesSent;
     private static LinkedBlockingQueue<String> hashes;
 
-    public static void main(String[] args) throws IOException, NoSuchAlgorithmException,
-            InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         hashes = new LinkedBlockingQueue<>();
+        Selector selector = Selector.open();
 
         if (args.length != 3) {
             log.warn("Invalid arguments. Provide <server-host> <server-port> <message-rate>");
@@ -63,8 +64,10 @@ public class Client {
 
         // Connect to the server
         socketChannel = SocketChannel.open(new InetSocketAddress(serverHost, serverPort));
+        socketChannel.configureBlocking(false);
+        socketChannel.register(selector, SelectionKey.OP_READ);
 
-        ClientProcessor clientProcessor = new ClientProcessor(socketChannel, hashes);
+        ClientProcessor clientProcessor = new ClientProcessor(selector, socketChannel, hashes);
         clientProcessor.start();
 
         Random random = new Random();
@@ -76,11 +79,11 @@ public class Client {
 
             // prepare message to send
             byteBuffer = ByteBuffer.wrap(message);
-            socketChannel.write(byteBuffer);
-            // log.info("Messages Sent: " + messagesSent.get());
+            while (byteBuffer.hasRemaining()) {
+                socketChannel.write(byteBuffer);
+            }
 
             String hashedMessage = HashUtil.SHA1FromBytes(message);
-            // log.info("Sent: " + hashedMessage);
             hashes.put(hashedMessage);
 
             noOfMessagesSent.getAndIncrement();

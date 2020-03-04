@@ -4,7 +4,9 @@ import cs455.scaling.util.Constants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -12,11 +14,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ClientProcessor extends Thread {
     private static final Logger log = LogManager.getLogger(ClientProcessor.class);
 
-    public AtomicLong noOfMessagesReceived;
+    private final Selector selector;
+    private AtomicLong noOfMessagesReceived;
     private SocketChannel socketChannel;
     private LinkedBlockingQueue<String> messagesSent;
 
-    public ClientProcessor(SocketChannel socketChannel, LinkedBlockingQueue<String> messagesSent) {
+    public ClientProcessor(Selector selector, SocketChannel socketChannel, LinkedBlockingQueue<String> messagesSent) {
+        this.selector = selector;
         this.socketChannel = socketChannel;
         this.messagesSent = messagesSent;
     }
@@ -29,6 +33,12 @@ public class ClientProcessor extends Thread {
         int mismatched = 0;
 
         while (true) {
+            try {
+                selector.select();
+            } catch (IOException e) {
+                log.error("Error in selector.select()");
+                e.printStackTrace();
+            }
             try {
                 ByteBuffer byteBuffer = ByteBuffer.allocate(Constants.SHA1_DIGEST_SIZE);
                 socketChannel.read(byteBuffer);
@@ -45,12 +55,6 @@ public class ClientProcessor extends Thread {
                 }
                 noOfMessagesReceived.getAndIncrement();
             } catch (Exception e) {
-                e.printStackTrace();
-            }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                log.error("Error in ClientProcessor");
                 e.printStackTrace();
             }
 

@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import cs455.scaling.task.Register;
 import cs455.scaling.task.Task;
 import cs455.scaling.util.Batch;
@@ -23,12 +26,13 @@ import org.apache.logging.log4j.Logger;
 public class ThreadPoolManager extends Thread {
     private static final Logger log = LogManager.getLogger(ThreadPoolManager.class);
     private volatile LinkedBlockingQueue<Batch> batchQueue;
-    private volatile LinkedBlockingQueue<Register> registerTaskQueue;
     private Batch currentBatch;
     private volatile Vector<Worker> workers;
     private final int threadPoolSize;
     private final int batchSize;
     private final int batchTime;
+
+    private final Object lock;
 
     public ThreadPoolManager(int threadPoolSize, int batchSize, int batchTime) {
         this.threadPoolSize = threadPoolSize;
@@ -37,6 +41,7 @@ public class ThreadPoolManager extends Thread {
         batchQueue = new LinkedBlockingQueue<>();
         currentBatch = new Batch();
         workers = new Vector<>();
+        lock = new Object();
         for (int i = 0; i < threadPoolSize; i++) {
             workers.add(new Worker("Worker " + (i + 1)));
         }
@@ -48,28 +53,38 @@ public class ThreadPoolManager extends Thread {
 
         long currentTime;
         while (true) {
-            currentTime = System.currentTimeMillis();
-            synchronized (this) {
-                if (currentTime - batchStartTime > batchTime && currentBatch.getSize() > 0) {
-                    log.info("Batch time (" + batchTime + ") exceeded.");
-                    log.debug("No. of tasks in the current batch: " + currentBatch.getSize());
-                    // process tasks in the current batch
-                    batchQueue.add(currentBatch);
-                    currentBatch = new Batch();
+            synchronized (lock) {
+                currentTime = System.currentTimeMillis();
+                long timeDifference = currentTime - batchStartTime;
+                // log.info("Time Difference: " + timeDifference);
+                if (timeDifference > (batchTime * 1000)) {
+                    if (currentBatch.getSize() > 0) {
+                        log.debug("Batch time (" + batchTime + ") exceeded.");
+                        log.info("No. of tasks in the current batch: " + currentBatch.getSize());
+                        // process tasks in the current batch
+                        resetCurrentBatch();
+                    }
+                    batchStartTime = System.currentTimeMillis();
                 }
             }
         }
     }
 
-    public synchronized void addTask(Task task) {
+    private void resetCurrentBatch() {
+        synchronized (lock) {
+            batchQueue.add(currentBatch);
+            currentBatch = new Batch();
+        }
+    }
+
+    public void addTask(Task task) {
         if (currentBatch.getSize() < batchSize - 1) {
             log.debug("Adding new task to batch");
         } else {
             log.debug("Batch is full. Creating a new batch");
             // TODO: Properly pause ThreadPoolManager while creating a new batch
             // this.interrupt();
-            batchQueue.add(currentBatch);
-            currentBatch = new Batch();
+            resetCurrentBatch();
         }
         currentBatch.addTask(task);
         log.debug("currentBatch.getCurrentSize: " + currentBatch.getSize());
