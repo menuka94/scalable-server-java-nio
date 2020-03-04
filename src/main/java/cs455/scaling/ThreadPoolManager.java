@@ -51,7 +51,7 @@ public class ThreadPoolManager extends Thread {
             currentTime = System.currentTimeMillis();
             synchronized (this) {
                 if (currentTime - batchStartTime > batchTime && currentBatch.getSize() > 0) {
-                    log.debug("Batch time (" + batchTime + ") exceeded.");
+                    log.info("Batch time (" + batchTime + ") exceeded.");
                     log.debug("No. of tasks in the current batch: " + currentBatch.getSize());
                     // process tasks in the current batch
                     batchQueue.add(currentBatch);

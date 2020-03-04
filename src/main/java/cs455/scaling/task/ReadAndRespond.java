@@ -32,7 +32,7 @@ public class ReadAndRespond implements Task {
 
         // Handle a closed connection
         if (bytesRead == -1) {
-             clientSocket.close();
+            clientSocket.close();
             // log.info("\t\tClient disconnected.");
             log.warn("bytesRead is -1");
         } else {
@@ -42,14 +42,18 @@ public class ReadAndRespond implements Task {
             String digest = HashUtil.SHA1FromBytes(buffer.array());
 
             buffer.clear();
-            buffer.put(digest.getBytes());
+
+            ByteBuffer respondBuffer = ByteBuffer.wrap(digest.getBytes());
+            while (respondBuffer.hasRemaining()) {
+                clientSocket.write(respondBuffer);
+            }
 
             // Flip the buffer now write
             buffer.flip();
             clientSocket.write(buffer);
 
             // Clear the buffer
-            buffer.clear();
+            respondBuffer.clear();
         }
         key.attach(null);
     }
