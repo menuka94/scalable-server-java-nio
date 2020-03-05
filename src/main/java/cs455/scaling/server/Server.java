@@ -1,6 +1,7 @@
 package cs455.scaling.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -52,6 +53,8 @@ public class Server {
             System.exit(1);
         }
 
+        log.info("Host name: " + InetAddress.getLocalHost().getHostName());
+
         threadPoolManager = new ThreadPoolManager(threadPoolSize, batchSize, batchTime);
         threadPoolManager.start();
         threadPoolManager.startWorkers();
@@ -61,7 +64,7 @@ public class Server {
 
         // Create input channel
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(new InetSocketAddress("localhost", portNum));
+        serverSocketChannel.bind(new InetSocketAddress(InetAddress.getLocalHost().getHostName(), portNum));
 
         // Register channel to the selector
         serverSocketChannel.configureBlocking(false);
