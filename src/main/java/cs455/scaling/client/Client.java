@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.security.NoSuchAlgorithmException;
+import java.util.LinkedList;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -73,18 +74,23 @@ public class Client {
             // an 8KB message
             byte[] message = new byte[Constants.MESSAGE_SIZE];
             random.nextBytes(message);
+            String hashedMessage = HashUtil.SHA1FromBytes(message);
+            hashes.put(hashedMessage);
+            // log.info("HashedMessage.length: " + hashedMessage.length());
 
             // prepare message to send
             byteBuffer = ByteBuffer.wrap(message);
-            socketChannel.write(byteBuffer);
+
+            while(byteBuffer.hasRemaining()) {
+                socketChannel.write(byteBuffer);
+            }
+
             // log.info("Messages Sent: " + messagesSent.get());
 
-            String hashedMessage = HashUtil.SHA1FromBytes(message);
             // log.info("Sent: " + hashedMessage);
-            hashes.put(hashedMessage);
 
             noOfMessagesSent.getAndIncrement();
-            if (noOfMessagesSent.get() % 100 == 0) {
+            if (noOfMessagesSent.get() % 10 == 0) {
                 log.info("No. of Messages Sent:" + noOfMessagesSent.get());
             }
 

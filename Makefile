@@ -12,7 +12,7 @@ build:
 
 run-server:
 	gradle build
-	cd build/classes/java/main && java -cp $(jarfile) cs455.scaling.server.Server 5600 10 5 2
+	cd build/classes/java/main && java -cp $(jarfile) cs455.scaling.server.Server 5600 10 1 1
 
 run-client:
 	cd build/classes/java/main && java -cp $(jarfile) cs455.scaling.client.Client $(host) 5600 4

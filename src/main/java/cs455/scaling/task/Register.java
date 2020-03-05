@@ -26,7 +26,7 @@ public class Register implements Task {
         // Grab the incoming socket from the serverSocketChannel
         SocketChannel clientSocketChannel = serverSocketChannel.accept();
         // Configure it to be a new channel and key that our selector should monitor
-        selector.wakeup();
+        // selector.wakeup();
         clientSocketChannel.configureBlocking(false);
         clientSocketChannel.register(selector, SelectionKey.OP_READ);
         key.attach(null);

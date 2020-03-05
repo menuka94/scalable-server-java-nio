@@ -20,7 +20,7 @@ public class ReadAndRespond implements Task {
 
     @Override
     public void execute() throws IOException {
-        log.debug("ReadAndRespond.execute()");
+        log.info("ReadAndRespond.execute()");
         // Create a buffer to read into
         ByteBuffer buffer = ByteBuffer.allocate(Constants.MESSAGE_SIZE);
 
@@ -28,7 +28,11 @@ public class ReadAndRespond implements Task {
         SocketChannel clientSocket = (SocketChannel) key.channel();
 
         // Read from it
-        int bytesRead = clientSocket.read(buffer);
+        int bytesRead = 0;
+
+        while(buffer.hasRemaining() && bytesRead != -1) {
+            bytesRead = clientSocket.read(buffer);
+        }
 
         // Handle a closed connection
         if (bytesRead == -1) {
@@ -50,11 +54,13 @@ public class ReadAndRespond implements Task {
 
             // Flip the buffer now write
             buffer.flip();
-            clientSocket.write(buffer);
+            clientSocket.write(respondBuffer);
 
             // Clear the buffer
             respondBuffer.clear();
         }
         key.attach(null);
+        key.selector().wakeup();
+        log.info("ReadAndRespond.execute() complete");
     }
 }
