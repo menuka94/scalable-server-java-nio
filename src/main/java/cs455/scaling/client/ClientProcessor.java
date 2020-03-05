@@ -52,6 +52,8 @@ public class ClientProcessor extends Thread {
             } catch (InterruptedException e) {
                 log.error("Error in ClientProcessor");
                 e.printStackTrace();
+            } catch (Throwable t) {
+                t.printStackTrace();
             }
 
             log.info("Matched: " + matched);

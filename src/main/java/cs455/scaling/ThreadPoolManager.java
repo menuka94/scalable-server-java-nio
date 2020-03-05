@@ -63,7 +63,7 @@ public class ThreadPoolManager extends Thread {
 
     public synchronized void addTask(Task task) {
         if (currentBatch.getSize() < batchSize - 1) {
-            log.debug("Adding new task to batch");
+            log.info("Adding new task to batch");
         } else {
             log.debug("Batch is full. Creating a new batch");
             // TODO: Properly pause ThreadPoolManager while creating a new batch
@@ -95,13 +95,13 @@ public class ThreadPoolManager extends Thread {
                 Batch batch = null;
                 try {
                     batch = batchQueue.take();
-                    log.debug("Worker taking one batch to process");
+                    log.info("Worker taking one batch to process");
                     Vector<Task> tasks = batch.getTasks();
                     Iterator<Task> iterator = tasks.iterator();
-                    log.debug("tasks.size(): " + tasks.size());
+                    log.info("tasks.size(): " + tasks.size());
                     int i = 0;
                     while (iterator.hasNext()) {
-                        log.debug("Executing task " + ++i);
+                        log.info("Executing task " + ++i);
                         Task task = iterator.next();
                         if (task == null) {
                             log.warn("Task is null");
@@ -112,6 +112,8 @@ public class ThreadPoolManager extends Thread {
                 } catch (InterruptedException | IOException e) {
                     log.error("Error in Worker");
                     e.printStackTrace();
+                } catch (Throwable t) {
+                    t.printStackTrace();
                 }
             }
         }

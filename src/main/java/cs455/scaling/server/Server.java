@@ -64,7 +64,7 @@ public class Server {
 
         // Create input channel
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(new InetSocketAddress(InetAddress.getLocalHost().getHostName(), portNum));
+        serverSocketChannel.bind(new InetSocketAddress("localhost", portNum));
 
         // Register channel to the selector
         serverSocketChannel.configureBlocking(false);
@@ -98,7 +98,8 @@ public class Server {
                         log.info("\tRegister");
                         key.attach(42); // attach random, non-null object
                         Register register = new Register(selector, serverSocketChannel, key);
-                        threadPoolManager.addTask(register);
+                        // threadPoolManager.addTask(register);
+                        register.execute();
                     } else {
                         log.debug("\tAlready registered");
                     }
