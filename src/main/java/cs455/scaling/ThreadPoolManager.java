@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.concurrent.LinkedBlockingQueue;
+
 import cs455.scaling.task.Register;
 import cs455.scaling.task.Task;
 import cs455.scaling.util.Batch;
@@ -44,18 +45,22 @@ public class ThreadPoolManager extends Thread {
 
     @Override
     public void run() {
-        long batchStartTime = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
 
         long currentTime;
         while (true) {
             currentTime = System.currentTimeMillis();
+            long timeDifference = currentTime - startTime;
             synchronized (this) {
-                if (currentTime - batchStartTime > batchTime && currentBatch.getSize() > 0) {
-                    log.info("Batch time (" + batchTime + ") exceeded.");
-                    log.debug("No. of tasks in the current batch: " + currentBatch.getSize());
-                    // process tasks in the current batch
-                    batchQueue.add(currentBatch);
-                    currentBatch = new Batch();
+                if (timeDifference > batchTime * 1000) {
+                    if (currentBatch.getSize() > 0) {
+                        log.info("Batch time (" + batchTime + ") exceeded.");
+                        log.debug("No. of tasks in the current batch: " + currentBatch.getSize());
+                        // process tasks in the current batch
+                        batchQueue.add(currentBatch);
+                        currentBatch = new Batch();
+                    }
+                    startTime =  System.currentTimeMillis();
                 }
             }
         }
@@ -63,7 +68,7 @@ public class ThreadPoolManager extends Thread {
 
     public synchronized void addTask(Task task) {
         if (currentBatch.getSize() < batchSize - 1) {
-            log.info("Adding new task to batch");
+            log.debug("Adding new task to batch");
         } else {
             log.debug("Batch is full. Creating a new batch");
             // TODO: Properly pause ThreadPoolManager while creating a new batch
@@ -95,13 +100,13 @@ public class ThreadPoolManager extends Thread {
                 Batch batch = null;
                 try {
                     batch = batchQueue.take();
-                    log.info("Worker taking one batch to process");
+                    log.debug("Worker taking one batch to process");
                     Vector<Task> tasks = batch.getTasks();
                     Iterator<Task> iterator = tasks.iterator();
-                    log.info("tasks.size(): " + tasks.size());
+                    log.debug("tasks.size(): " + tasks.size());
                     int i = 0;
                     while (iterator.hasNext()) {
-                        log.info("Executing task " + ++i);
+                        log.debug("Executing task " + ++i);
                         Task task = iterator.next();
                         if (task == null) {
                             log.warn("Task is null");

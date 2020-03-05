@@ -64,7 +64,7 @@ public class Server {
 
         // Create input channel
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.bind(new InetSocketAddress("localhost", portNum));
+        serverSocketChannel.bind(new InetSocketAddress(InetAddress.getLocalHost().getHostName(), portNum));
 
         // Register channel to the selector
         serverSocketChannel.configureBlocking(false);
