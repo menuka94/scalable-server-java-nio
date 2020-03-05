@@ -105,7 +105,7 @@ public class Server {
                 if (key.isReadable()) {
                     if (key.attachment() == null) {
                         key.attach(43); // attach random, non-null object
-                        log.debug("\tReadAndRespond");
+                        log.info("\tReadAndRespond");
                         ReadAndRespond readAndRespond = new ReadAndRespond(key);
                         threadPoolManager.addTask(readAndRespond);
                     } else {

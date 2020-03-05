@@ -64,8 +64,8 @@ public class Client {
 
         // Connect to the server
         socketChannel = SocketChannel.open(new InetSocketAddress(serverHost, serverPort));
-        socketChannel.configureBlocking(false);
-        socketChannel.register(selector, SelectionKey.OP_READ);
+        // socketChannel.configureBlocking(false);
+        // socketChannel.register(selector, SelectionKey.OP_READ);
 
         ClientProcessor clientProcessor = new ClientProcessor(selector, socketChannel, hashes);
         clientProcessor.start();
@@ -90,7 +90,6 @@ public class Client {
             if (noOfMessagesSent.get() % 100 == 0) {
                 log.info("No. of Messages Sent:" + noOfMessagesSent.get());
             }
-
             Thread.sleep(sleepTime);
         }
     }

@@ -34,12 +34,6 @@ public class ClientProcessor extends Thread {
 
         while (true) {
             try {
-                selector.select();
-            } catch (IOException e) {
-                log.error("Error in selector.select()");
-                e.printStackTrace();
-            }
-            try {
                 ByteBuffer byteBuffer = ByteBuffer.allocate(Constants.SHA1_DIGEST_SIZE);
                 socketChannel.read(byteBuffer);
                 String response = new String(byteBuffer.array());
@@ -60,6 +54,13 @@ public class ClientProcessor extends Thread {
 
             log.info("Matched: " + matched);
             log.info("Mismatched: " + mismatched);
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                log.error("Error in sleeping ClientProcessor thread");
+                e.printStackTrace();
+            }
         }
     }
 }

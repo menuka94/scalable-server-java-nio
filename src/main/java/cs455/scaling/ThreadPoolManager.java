@@ -56,10 +56,9 @@ public class ThreadPoolManager extends Thread {
             synchronized (lock) {
                 currentTime = System.currentTimeMillis();
                 long timeDifference = currentTime - batchStartTime;
-                // log.info("Time Difference: " + timeDifference);
                 if (timeDifference > (batchTime * 1000)) {
+                    log.debug("Batch time (" + batchTime + ") exceeded.");
                     if (currentBatch.getSize() > 0) {
-                        log.debug("Batch time (" + batchTime + ") exceeded.");
                         log.info("No. of tasks in the current batch: " + currentBatch.getSize());
                         // process tasks in the current batch
                         resetCurrentBatch();
@@ -71,6 +70,7 @@ public class ThreadPoolManager extends Thread {
     }
 
     private void resetCurrentBatch() {
+        log.debug("Resetting current batch");
         synchronized (lock) {
             batchQueue.add(currentBatch);
             currentBatch = new Batch();
@@ -78,16 +78,16 @@ public class ThreadPoolManager extends Thread {
     }
 
     public void addTask(Task task) {
-        if (currentBatch.getSize() < batchSize - 1) {
-            log.debug("Adding new task to batch");
-        } else {
-            log.debug("Batch is full. Creating a new batch");
-            // TODO: Properly pause ThreadPoolManager while creating a new batch
-            // this.interrupt();
-            resetCurrentBatch();
-        }
-        currentBatch.addTask(task);
-        log.debug("currentBatch.getCurrentSize: " + currentBatch.getSize());
+        // synchronized (lock) {
+            if (currentBatch.getSize() < batchSize - 1) {
+                log.debug("Adding new task to batch");
+            } else {
+                log.debug("Batch is full. Creating a new batch");
+                resetCurrentBatch();
+            }
+            currentBatch.addTask(task);
+            log.debug("currentBatch.getCurrentSize: " + currentBatch.getSize());
+        // }
     }
 
     public void startWorkers() {
@@ -107,7 +107,7 @@ public class ThreadPoolManager extends Thread {
         public void run() {
             log.info("Worker starting ...");
             while (true) {
-                Batch batch = null;
+                Batch batch;
                 try {
                     batch = batchQueue.take();
                     log.debug("Worker taking one batch to process");
