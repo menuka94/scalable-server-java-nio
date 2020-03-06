@@ -32,6 +32,7 @@ public class ThreadPoolManager extends Thread {
     private final int batchTime;
 
     private final Object lock;
+    private volatile long startTime;
 
     public ThreadPoolManager(int threadPoolSize, int batchSize, int batchTime) {
         this.threadPoolSize = threadPoolSize;
@@ -49,21 +50,20 @@ public class ThreadPoolManager extends Thread {
     @Override
     public void run() {
         // long startTime = System.currentTimeMillis();
-        //
-        // long currentTime;
-        // while (true) {
-        //     currentTime = System.currentTimeMillis();
-        //     long timeDifference = currentTime - startTime;
-        //     if (timeDifference > batchTime * 1000) {
-        //         if (currentBatch.getSize() > 0) {
-        //             log.info("Batch time (" + batchTime + ") exceeded. \n" +
-        //                     "No. of tasks in the current batch: " + currentBatch.getSize());
-        //             // process tasks in the current batch
-        //             resetBatch();
-        //         }
-        //         startTime = System.currentTimeMillis();
-        //     }
-        // }
+
+        long currentTime;
+        while (true) {
+            currentTime = System.currentTimeMillis();
+            long timeDifference = currentTime - startTime;
+            if (timeDifference > batchTime * 1000) {
+                if (currentBatch.getSize() > 0) {
+                    log.info("Batch time (" + batchTime + ") exceeded. \n" +
+                            "No. of tasks in the current batch: " + currentBatch.getSize());
+                    // process tasks in the current batch
+                    resetBatch();
+                }
+            }
+        }
     }
 
     private void resetBatch() {
@@ -71,6 +71,7 @@ public class ThreadPoolManager extends Thread {
         log.debug("Resetting current batch");
         batchQueue.add(currentBatch);
         currentBatch = new Batch();
+        startTime = System.currentTimeMillis();
         // }
     }
 
