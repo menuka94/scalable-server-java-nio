@@ -5,10 +5,12 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.security.NoSuchAlgorithmException;
-import java.util.LinkedList;
 import java.util.Random;
+import java.util.Timer;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+
+import cs455.scaling.task.ClientStats;
 import cs455.scaling.util.Constants;
 import cs455.scaling.util.HashUtil;
 import org.apache.logging.log4j.LogManager;
@@ -31,7 +33,8 @@ public class Client {
 
     private static SocketChannel socketChannel;
     // private static ByteBuffer buffer;
-    private static AtomicLong noOfMessagesSent;
+    private static AtomicLong numMessagesSent;
+    private static AtomicLong numMessagesReceived;
     private static LinkedBlockingQueue<String> hashes;
 
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException,
@@ -60,13 +63,17 @@ public class Client {
 
         long sleepTime = 1000 / messageRate;
 
-        noOfMessagesSent = new AtomicLong();
+        numMessagesSent = new AtomicLong(0);
+        numMessagesReceived = new AtomicLong(0);
 
         // Connect to the server
         socketChannel = SocketChannel.open(new InetSocketAddress(serverHost, serverPort));
 
-        ClientProcessor clientProcessor = new ClientProcessor(socketChannel, hashes);
+        ClientProcessor clientProcessor = new ClientProcessor(socketChannel, hashes, numMessagesReceived);
         clientProcessor.start();
+
+        ClientStats clientStats = new ClientStats(numMessagesSent, numMessagesReceived);
+        new Timer().scheduleAtFixedRate(clientStats, 0L, Constants.STATS_PRINT_INTERVAL);
 
         Random random = new Random();
         ByteBuffer byteBuffer = ByteBuffer.allocate(Constants.MESSAGE_SIZE);
@@ -89,9 +96,9 @@ public class Client {
 
             // log.info("Sent: " + hashedMessage);
 
-            noOfMessagesSent.getAndIncrement();
-            if (noOfMessagesSent.get() % 10 == 0) {
-                log.info("No. of Messages Sent:" + noOfMessagesSent.get());
+            numMessagesSent.getAndIncrement();
+            if (numMessagesSent.get() % 10 == 0) {
+                log.debug("No. of Messages Sent:" + numMessagesSent.get());
             }
 
             Thread.sleep(sleepTime);
@@ -99,10 +106,10 @@ public class Client {
     }
 
     public static long getNoOfSentMessages() {
-        return noOfMessagesSent.get();
+        return numMessagesSent.get();
     }
 
     public static void resetNoOfMessagesSent() {
-        noOfMessagesSent.set(0);
+        numMessagesSent.set(0);
     }
 }

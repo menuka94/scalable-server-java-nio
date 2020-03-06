@@ -6,25 +6,25 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.LinkedList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ClientProcessor extends Thread {
     private static final Logger log = LogManager.getLogger(ClientProcessor.class);
 
-    public AtomicLong noOfMessagesReceived;
+    public AtomicLong numMessagesReceived;
     private SocketChannel socketChannel;
     private LinkedBlockingQueue<String> messagesSent;
 
-    public ClientProcessor(SocketChannel socketChannel, LinkedBlockingQueue<String> messagesSent) {
+    public ClientProcessor(SocketChannel socketChannel, LinkedBlockingQueue<String> messagesSent,
+                           AtomicLong numMessagesReceived) {
         this.socketChannel = socketChannel;
         this.messagesSent = messagesSent;
+        this.numMessagesReceived = numMessagesReceived;
     }
 
     @Override
     public void run() {
-        noOfMessagesReceived = new AtomicLong(0);
         log.info("Starting ClientProcessor");
         int matched = 0;
         int mismatched = 0;
@@ -35,16 +35,16 @@ public class ClientProcessor extends Thread {
                 socketChannel.read(byteBuffer);
                 String response = new String(byteBuffer.array());
 
-                log.info("Response: " + response);
+                log.debug("Response: " + response);
                 if (messagesSent.contains(response)) {
                     messagesSent.remove(response);
-                    // log.info("Hash matched. Removing ...");
+                    log.debug("Hash matched. Removing ...");
                     matched++;
                 } else {
                     log.warn("Hash not found in sent messages");
                     mismatched++;
                 }
-                noOfMessagesReceived.getAndIncrement();
+                numMessagesReceived.getAndIncrement();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -57,8 +57,8 @@ public class ClientProcessor extends Thread {
                 t.printStackTrace();
             }
 
-            log.info("Matched: " + matched);
-            log.info("Mismatched: " + mismatched);
+            log.debug("Matched: " + matched);
+            log.debug("Mismatched: " + mismatched);
         }
     }
 }

@@ -8,11 +8,14 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Timer;
 
 import cs455.scaling.ThreadPoolManager;
 import cs455.scaling.task.ReadAndRespond;
 import cs455.scaling.task.Register;
+import cs455.scaling.task.ServerStats;
 import cs455.scaling.util.Batch;
+import cs455.scaling.util.Constants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,6 +74,9 @@ public class Server {
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
         // serverSocketChannel.register(selector, serverSocketChannel.validOps());
 
+        ServerStats serverStats = new ServerStats();
+        new Timer().scheduleAtFixedRate(serverStats, 0L, Constants.STATS_PRINT_INTERVAL);
+
         // Loop on selector
         while (true) {
             log.debug("Listening for new connections or messages");
@@ -109,7 +115,7 @@ public class Server {
                 if (key.isReadable()) {
                     if (key.attachment() == null) {
                         key.attach(43); // attach random, non-null object
-                        log.info("\tReadAndRespond");
+                        log.debug("\tReadAndRespond");
                         ReadAndRespond readAndRespond = new ReadAndRespond(key);
                         threadPoolManager.addTask(readAndRespond);
                     } else {
