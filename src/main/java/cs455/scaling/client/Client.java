@@ -69,6 +69,8 @@ public class Client {
         // Connect to the server
         socketChannel = SocketChannel.open(new InetSocketAddress(serverHost, serverPort));
 
+        socketChannel.configureBlocking(false);
+
         ClientProcessor clientProcessor = new ClientProcessor(socketChannel, hashes, numMessagesReceived);
         clientProcessor.start();
 

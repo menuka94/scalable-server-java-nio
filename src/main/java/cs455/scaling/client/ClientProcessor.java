@@ -4,7 +4,10 @@ import cs455.scaling.util.Constants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -14,13 +17,16 @@ public class ClientProcessor extends Thread {
 
     public AtomicLong numMessagesReceived;
     private SocketChannel socketChannel;
+    private Selector selector;
     private LinkedBlockingQueue<String> messagesSent;
 
     public ClientProcessor(SocketChannel socketChannel, LinkedBlockingQueue<String> messagesSent,
-                           AtomicLong numMessagesReceived) {
+                           AtomicLong numMessagesReceived) throws IOException {
         this.socketChannel = socketChannel;
         this.messagesSent = messagesSent;
         this.numMessagesReceived = numMessagesReceived;
+        selector = Selector.open();
+        socketChannel.register(selector, SelectionKey.OP_READ);
     }
 
     @Override
@@ -31,6 +37,11 @@ public class ClientProcessor extends Thread {
 
         while (true) {
             try {
+                selector.select();
+            } catch (Throwable e)  {
+                e.printStackTrace();
+            }
+            try {
                 ByteBuffer byteBuffer = ByteBuffer.allocate(Constants.SHA1_DIGEST_SIZE);
                 socketChannel.read(byteBuffer);
                 String response = new String(byteBuffer.array());
@@ -40,21 +51,13 @@ public class ClientProcessor extends Thread {
                     messagesSent.remove(response);
                     log.debug("Hash matched. Removing ...");
                     matched++;
+                    numMessagesReceived.getAndIncrement();
                 } else {
                     log.warn("Hash not found in sent messages");
                     mismatched++;
                 }
-                numMessagesReceived.getAndIncrement();
             } catch (Exception e) {
                 e.printStackTrace();
-            }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                log.error("Error in ClientProcessor");
-                e.printStackTrace();
-            } catch (Throwable t) {
-                t.printStackTrace();
             }
 
             log.debug("Matched: " + matched);

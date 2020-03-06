@@ -48,22 +48,22 @@ public class ThreadPoolManager extends Thread {
 
     @Override
     public void run() {
-        long startTime = System.currentTimeMillis();
-
-        long currentTime;
-        while (true) {
-            currentTime = System.currentTimeMillis();
-            long timeDifference = currentTime - startTime;
-            if (timeDifference > batchTime * 1000) {
-                if (currentBatch.getSize() > 0) {
-                    log.info("Batch time (" + batchTime + ") exceeded. \n" +
-                            "No. of tasks in the current batch: " + currentBatch.getSize());
-                    // process tasks in the current batch
-                    resetBatch();
-                }
-                startTime = System.currentTimeMillis();
-            }
-        }
+        // long startTime = System.currentTimeMillis();
+        //
+        // long currentTime;
+        // while (true) {
+        //     currentTime = System.currentTimeMillis();
+        //     long timeDifference = currentTime - startTime;
+        //     if (timeDifference > batchTime * 1000) {
+        //         if (currentBatch.getSize() > 0) {
+        //             log.info("Batch time (" + batchTime + ") exceeded. \n" +
+        //                     "No. of tasks in the current batch: " + currentBatch.getSize());
+        //             // process tasks in the current batch
+        //             resetBatch();
+        //         }
+        //         startTime = System.currentTimeMillis();
+        //     }
+        // }
     }
 
     private void resetBatch() {
