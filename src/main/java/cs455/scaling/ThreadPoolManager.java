@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import cs455.scaling.task.Register;
 import cs455.scaling.task.Task;
 import cs455.scaling.util.Batch;
@@ -49,30 +48,26 @@ public class ThreadPoolManager extends Thread {
 
     @Override
     public void run() {
-        // long startTime = System.currentTimeMillis();
-
-        long currentTime;
         while (true) {
-            currentTime = System.currentTimeMillis();
-            long timeDifference = currentTime - startTime;
-            if (timeDifference > batchTime * 1000) {
-                if (currentBatch.getSize() > 0) {
-                    log.info("Batch time (" + batchTime + ") exceeded. \n" +
-                            "No. of tasks in the current batch: " + currentBatch.getSize());
-                    // process tasks in the current batch
-                    resetBatch();
-                }
+            try {
+                Thread.sleep(batchTime * 1000);
+            } catch (InterruptedException e) {
+                log.error("Error in pausing thread");
+                e.printStackTrace();
+            }
+            if (currentBatch.getSize() > 0) {
+                log.info("Batch time (" + batchTime + ") exceeded. \n" +
+                        "No. of tasks in the current batch: " + currentBatch.getSize());
+                // process tasks in the current batch
+                resetBatch();
             }
         }
     }
 
     private void resetBatch() {
-        // synchronized (lock) {
         log.debug("Resetting current batch");
         batchQueue.add(currentBatch);
         currentBatch = new Batch();
-        startTime = System.currentTimeMillis();
-        // }
     }
 
     public void addTask(Task task) {
