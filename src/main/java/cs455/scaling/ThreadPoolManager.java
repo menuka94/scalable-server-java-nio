@@ -28,12 +28,12 @@ public class ThreadPoolManager extends Thread {
     private volatile Vector<Worker> workers;
     private final int threadPoolSize;
     private final int batchSize;
-    private final int batchTime;
+    private final double batchTime;
 
     private final Object lock;
     private volatile long startTime;
 
-    public ThreadPoolManager(int threadPoolSize, int batchSize, int batchTime) {
+    public ThreadPoolManager(int threadPoolSize, int batchSize, double batchTime) {
         this.threadPoolSize = threadPoolSize;
         this.batchSize = batchSize;
         this.batchTime = batchTime;
@@ -50,39 +50,43 @@ public class ThreadPoolManager extends Thread {
     public void run() {
         while (true) {
             try {
-                Thread.sleep(batchTime * 1000);
+                int sleepTime = (int) (batchTime * 1000);
+                Thread.sleep(sleepTime);
             } catch (InterruptedException e) {
                 log.error("Error in pausing thread");
                 e.printStackTrace();
             }
-            if (currentBatch.getSize() > 0) {
-                log.info("Batch time (" + batchTime + ") exceeded. \n" +
-                        "No. of tasks in the current batch: " + currentBatch.getSize());
-                // process tasks in the current batch
-                resetBatch();
+            synchronized (lock) {
+                if (currentBatch.getSize() > 0) {
+                    log.info("Batch time (" + batchTime + ") exceeded. \n" +
+                            "No. of tasks in the current batch: " + currentBatch.getSize());
+                    // process tasks in the current batch
+                    resetBatch();
+                }
             }
         }
     }
 
     private void resetBatch() {
-        log.debug("Resetting current batch");
+        log.info("Resetting current batch");
         batchQueue.add(currentBatch);
         currentBatch = new Batch();
     }
 
+    // both worker threads and the ThreadPoolManager thread access the currentBatch object
     public void addTask(Task task) {
-        log.debug("currentBatch.getSize(): " + currentBatch.getSize());
-        if (currentBatch.getSize() < batchSize - 1) {
-            log.debug("Adding new task to batch");
-            currentBatch.addTask(task);
-        } else {
-            log.debug("Batch is full. Creating a new batch");
-            // TODO: Properly pause ThreadPoolManager while creating a new batch
-            // this.interrupt();
-            currentBatch.addTask(task);
-            resetBatch();
+        synchronized (lock) {
+            log.debug("currentBatch.getSize(): " + currentBatch.getSize());
+            if (currentBatch.getSize() < batchSize - 1) {
+                log.info("Adding new task to batch");
+                currentBatch.addTask(task);
+            } else {
+                log.info("Batch is full. Creating a new batch");
+                currentBatch.addTask(task);
+                resetBatch();
+            }
+            log.debug("currentBatch.getCurrentSize: " + currentBatch.getSize());
         }
-        log.debug("currentBatch.getCurrentSize: " + currentBatch.getSize());
     }
 
     public void startWorkers() {

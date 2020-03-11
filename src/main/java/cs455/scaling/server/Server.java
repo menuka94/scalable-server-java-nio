@@ -43,13 +43,13 @@ public class Server {
         int portNum = 0;
         int threadPoolSize = 0;
         int batchSize = 0;
-        int batchTime = 0;
+        double batchTime = 0;
 
         try {
             portNum = Integer.parseInt(args[0]);
             threadPoolSize = Integer.parseInt(args[1]);
             batchSize = Integer.parseInt(args[2]);
-            batchTime = Integer.parseInt(args[3]);
+            batchTime = Double.parseDouble(args[3]);
         } catch (NumberFormatException e) {
             log.error(e.getStackTrace());
             log.info("Invalid arguments. Exiting ...");
