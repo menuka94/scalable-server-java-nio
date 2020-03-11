@@ -3,7 +3,9 @@ package cs455.scaling.task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,15 +29,37 @@ public class ServerStats extends TimerTask {
     public void run() {
         AtomicInteger numClients = Register.getNumClients();
         AtomicLong numMessagesProcessed = ReadAndRespond.getNumMessagesProcessed();
-        double serverThroughput = numMessagesProcessed.get()/20.0;
+        double serverThroughput = numMessagesProcessed.get() / 20.0;
         throughputs = new ArrayList<>();
+
+        HashMap<SocketChannel, AtomicInteger> clientNumSentMessages = ReadAndRespond.getClientNumSentMessages();
+
+
+        double sumOfThroughputs = 0.0;
+        for (AtomicInteger value : clientNumSentMessages.values()) {
+            double throughputValue = value.get() / 20.0;
+            sumOfThroughputs += throughputValue;
+            throughputs.add(throughputValue);
+        }
+
+        double perClientThroughput = sumOfThroughputs / clientNumSentMessages.size();
+
+        double standardDeviation = 0.0;
+        for (Double throughput : throughputs) {
+            standardDeviation += Math.pow((throughput - perClientThroughput), 2) / clientNumSentMessages.size();
+        }
+
+        standardDeviation = Math.sqrt(standardDeviation);
+
 
         log.info("Server Throughput: " + serverThroughput + " messages/s, " +
                 "Active Client Connections: " + numClients.get() + ", " +
-                "Mean Per-client Throughput: " + " messages/s, " +
-                "Std. Dev. Of Per-client Throughput: " + " messages/s");
+                "Mean Per-client Throughput: " + perClientThroughput + " messages/s, " +
+                "Std. Dev. Of Per-client Throughput: " + standardDeviation + " messages/s");
 
         ReadAndRespond.resetNumMessagesProcessed();
+        ReadAndRespond.resetClientNumSentMessages();
+        throughputs = new ArrayList<>();
     }
 
 }

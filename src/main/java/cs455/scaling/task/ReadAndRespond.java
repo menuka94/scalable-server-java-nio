@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import cs455.scaling.util.Constants;
@@ -15,6 +17,7 @@ public class ReadAndRespond implements Task {
     private static final Logger log = LogManager.getLogger(ReadAndRespond.class);
     private SelectionKey key;
     private static final AtomicLong numMessagesProcessed = new AtomicLong(0);
+    private static final HashMap<SocketChannel, AtomicInteger> clientNumSentMessages = new HashMap<>();
 
     public ReadAndRespond(SelectionKey key) {
         this.key = key;
@@ -28,6 +31,14 @@ public class ReadAndRespond implements Task {
 
         // Grab the socket from the key
         SocketChannel clientSocket = (SocketChannel) key.channel();
+
+        if (!clientNumSentMessages.containsKey(clientSocket)) {
+            clientNumSentMessages.put(clientSocket, new AtomicInteger(1));
+        } else {
+            // socketChannel already exists
+            AtomicInteger numMessagesSent = clientNumSentMessages.get(clientSocket);
+            numMessagesSent.getAndIncrement();
+        }
 
         // Read from it
         int bytesRead = 0;
@@ -72,5 +83,15 @@ public class ReadAndRespond implements Task {
 
     public static void resetNumMessagesProcessed() {
         numMessagesProcessed.set(0);
+    }
+
+    public static HashMap<SocketChannel, AtomicInteger> getClientNumSentMessages () {
+        return clientNumSentMessages;
+    }
+
+    public static void resetClientNumSentMessages () {
+        for (AtomicInteger value : clientNumSentMessages.values()) {
+            value.set(0);
+        }
     }
 }

@@ -58,7 +58,7 @@ public class ThreadPoolManager extends Thread {
             }
             synchronized (lock) {
                 if (currentBatch.getSize() > 0) {
-                    log.info("Batch time (" + batchTime + ") exceeded. \n" +
+                    log.debug("Batch time (" + batchTime + ") exceeded. \n" +
                             "No. of tasks in the current batch: " + currentBatch.getSize());
                     // process tasks in the current batch
                     resetBatch();
@@ -68,7 +68,7 @@ public class ThreadPoolManager extends Thread {
     }
 
     private void resetBatch() {
-        log.info("Resetting current batch");
+        log.debug("Resetting current batch");
         batchQueue.add(currentBatch);
         currentBatch = new Batch();
     }
@@ -78,10 +78,10 @@ public class ThreadPoolManager extends Thread {
         synchronized (lock) {
             log.debug("currentBatch.getSize(): " + currentBatch.getSize());
             if (currentBatch.getSize() < batchSize - 1) {
-                log.info("Adding new task to batch");
+                log.debug("Adding new task to batch");
                 currentBatch.addTask(task);
             } else {
-                log.info("Batch is full. Creating a new batch");
+                log.debug("Batch is full. Creating a new batch");
                 currentBatch.addTask(task);
                 resetBatch();
             }
