@@ -85,7 +85,6 @@ public class Client {
             random.nextBytes(message);
             String hashedMessage = HashUtil.SHA1FromBytes(message);
             hashes.put(hashedMessage);
-            // log.info("HashedMessage.length: " + hashedMessage.length());
 
             // prepare message to send
             byteBuffer = ByteBuffer.wrap(message);
@@ -93,10 +92,6 @@ public class Client {
             while(byteBuffer.hasRemaining()) {
                 socketChannel.write(byteBuffer);
             }
-
-            // log.info("Messages Sent: " + messagesSent.get());
-
-            // log.info("Sent: " + hashedMessage);
 
             numMessagesSent.getAndIncrement();
             if (numMessagesSent.get() % 10 == 0) {
